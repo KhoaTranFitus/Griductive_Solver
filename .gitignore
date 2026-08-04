@@ -1,1 +1,38 @@
-# .gitignore
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Build files
+build/
+dist/
+*.egg-info/
+
+# Testing and cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Executable files
+*.exe
+*.dll
