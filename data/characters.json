@@ -1,0 +1,65 @@
+[
+    {
+        "id": "char_01",
+        "name": "Alice",
+        "gender": "female",
+        "occupation": "Astronomer",
+        "avatar_path": "assets/characters/char_01.png"
+    },
+    {
+        "id": "char_02",
+        "name": "Benjamin",
+        "gender": "male",
+        "occupation": "Baker",
+        "avatar_path": "assets/characters/char_02.png"
+    },
+    {
+        "id": "char_03",
+        "name": "Clara",
+        "gender": "female",
+        "occupation": "Chemist",
+        "avatar_path": "assets/characters/char_03.png"
+    },
+    {
+        "id": "char_04",
+        "name": "Daniel",
+        "gender": "male",
+        "occupation": "Dentist",
+        "avatar_path": "assets/characters/char_04.png"
+    },
+    {
+        "id": "char_05",
+        "name": "Emma",
+        "gender": "female",
+        "occupation": "Engineer",
+        "avatar_path": "assets/characters/char_05.png"
+    },
+    {
+        "id": "char_06",
+        "name": "Felix",
+        "gender": "male",
+        "occupation": "Farmer",
+        "avatar_path": "assets/characters/char_06.png"
+    },
+    {
+        "id": "char_07",
+        "name": "Grace",
+        "gender": "female",
+        "occupation": "Geologist",
+        "avatar_path": "assets/characters/char_07.png"
+    },
+    {
+        "id": "char_08",
+        "name": "Henry",
+        "gender": "male",
+        "occupation": "Historian",
+        "avatar_path": "assets/characters/char_08.png"
+    },
+    {
+        "id": "char_09",
+        "name": "Iris",
+        "gender": "female",
+        "occupation": "Interpreter",
+        "avatar_path": "assets/characters/char_09.png"
+    }
+]
