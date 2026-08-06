@@ -179,3 +179,74 @@ class DPLLSolver:
 
             assignment[variable_id] = required_value
             statistics.propagations += 1
+
+    @classmethod
+    def _choose_variable(
+        cls,
+        clauses: list[list[int]],
+        assignment: dict[int, bool],
+    ) -> int | None:
+        """Choose the smallest unassigned variable in unresolved clauses."""
+        candidates: set[int] = set()
+
+        for clause in clauses:
+            analysis = cls._analyze_clause(clause, assignment)
+
+            if analysis.state not in (
+                ClauseState.UNRESOLVED,
+                ClauseState.UNIT,
+            ):
+                continue
+
+            for literal in set(clause):
+                variable_id = abs(literal)
+
+                if variable_id not in assignment:
+                    candidates.add(variable_id)
+
+        return min(candidates) if candidates else None
+
+    @classmethod
+    def _dpll(
+        cls,
+        clauses: list[list[int]],
+        assignment: dict[int, bool],
+        statistics: SolverStatistics,
+    ) -> dict[int, bool] | None:
+        """Search for a satisfying partial assignment recursively."""
+        working_assignment = assignment.copy()
+
+        propagation_ok = cls._unit_propagate(
+            clauses,
+            working_assignment,
+            statistics,
+        )
+
+        if not propagation_ok:
+            return None
+
+        if cls._all_clauses_satisfied(clauses, working_assignment):
+            return working_assignment
+
+        variable_id = cls._choose_variable(clauses, working_assignment)
+
+        if variable_id is None:
+            return None
+
+        for value in (True, False):
+            branch_assignment = working_assignment.copy()
+            branch_assignment[variable_id] = value
+            statistics.decisions += 1
+
+            result = cls._dpll(
+                clauses,
+                branch_assignment,
+                statistics,
+            )
+
+            if result is not None:
+                return result
+
+            statistics.backtracks += 1
+
+        return None

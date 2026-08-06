@@ -194,3 +194,150 @@ def test_unit_propagate_preserves_decisions_and_backtracks():
     assert statistics.propagations == 1
     assert statistics.decisions == 4
     assert statistics.backtracks == 2
+
+
+@pytest.mark.parametrize(
+    ("clauses", "assignment", "expected"),
+    [
+        ([[5, 3], [2, -4]], {}, 2),
+        ([[1], [2, 3]], {1: True, 2: False}, 3),
+        ([[1, 2], [3, 4]], {1: True}, 3),
+        ([[4, 4, 3], [2, 2]], {}, 2),
+        ([[1, -1], [3, 4]], {}, 3),
+        ([[1], [-2]], {1: True, 2: False}, None),
+    ],
+)
+def test_choose_variable(clauses, assignment, expected):
+    assert DPLLSolver._choose_variable(clauses, assignment) == expected
+
+
+def test_choose_variable_does_not_mutate_inputs():
+    clauses = [[5, 3, 3], [2, -4]]
+    assignment = {5: False}
+    original_clauses = [clause.copy() for clause in clauses]
+    original_assignment = assignment.copy()
+
+    DPLLSolver._choose_variable(clauses, assignment)
+
+    assert clauses == original_clauses
+    assert assignment == original_assignment
+
+
+def test_dpll_solves_sat_by_unit_propagation_only():
+    statistics = SolverStatistics()
+
+    result = DPLLSolver._dpll([[1], [-1, 2]], {}, statistics)
+
+    assert result == {1: True, 2: True}
+    assert statistics.decisions == 0
+    assert statistics.propagations == 2
+    assert statistics.backtracks == 0
+
+
+def test_dpll_solves_sat_with_one_decision():
+    statistics = SolverStatistics()
+
+    result = DPLLSolver._dpll([[1, 2], [-1, 2]], {}, statistics)
+
+    assert result is not None
+    assert result[1] is True
+    assert result[2] is True
+    assert statistics.decisions == 1
+    assert statistics.propagations == 1
+    assert statistics.backtracks == 0
+
+
+def test_dpll_backtracks_to_successful_false_branch():
+    statistics = SolverStatistics()
+    clauses = [[-1, 2], [-1, -2], [1, 3]]
+
+    result = DPLLSolver._dpll(clauses, {}, statistics)
+
+    assert result is not None
+    assert result[1] is False
+    assert result[3] is True
+    assert statistics.decisions == 2
+    assert statistics.propagations == 2
+    assert statistics.backtracks == 1
+
+
+def test_dpll_finds_unsat_after_both_branches_fail():
+    statistics = SolverStatistics()
+    clauses = [[1, 2], [1, -2], [-1, 2], [-1, -2]]
+
+    result = DPLLSolver._dpll(clauses, {}, statistics)
+
+    assert result is None
+    assert statistics.decisions == 2
+    assert statistics.propagations == 2
+    assert statistics.backtracks == 2
+
+
+@pytest.mark.parametrize(
+    ("clauses", "expected"),
+    [
+        ([], {}),
+        ([[]], None),
+    ],
+)
+def test_dpll_handles_empty_formula_and_empty_clause(clauses, expected):
+    statistics = SolverStatistics()
+
+    result = DPLLSolver._dpll(clauses, {}, statistics)
+
+    assert result == expected
+    assert statistics.decisions == 0
+    assert statistics.propagations == 0
+    assert statistics.backtracks == 0
+
+
+def test_dpll_does_not_mutate_caller_assignment():
+    assignment = {}
+    original_assignment = assignment.copy()
+
+    DPLLSolver._dpll(
+        [[1, 2], [-1, 2]],
+        assignment,
+        SolverStatistics(),
+    )
+
+    assert assignment == original_assignment
+
+
+def test_dpll_does_not_mutate_clauses():
+    clauses = [[-1, 2], [-1, -2], [1, 3]]
+    original_clauses = [clause.copy() for clause in clauses]
+
+    DPLLSolver._dpll(clauses, {}, SolverStatistics())
+
+    assert clauses == original_clauses
+
+
+def test_dpll_failed_branch_assignment_does_not_leak():
+    clauses = [[-1, 2], [-1, -2], [1, 3]]
+
+    result = DPLLSolver._dpll(clauses, {}, SolverStatistics())
+
+    assert result is not None
+    assert result[1] is False
+    assert result[3] is True
+    assert 2 not in result
+
+
+def test_dpll_is_deterministic_across_runs():
+    clauses = [[-1, 2], [-1, -2], [1, 3]]
+    runs = []
+
+    for _ in range(5):
+        statistics = SolverStatistics()
+        result = DPLLSolver._dpll(clauses, {}, statistics)
+        runs.append(
+            (
+                result,
+                statistics.decisions,
+                statistics.propagations,
+                statistics.backtracks,
+            )
+        )
+
+    assert all(run == runs[0] for run in runs[1:])
