@@ -1,55 +1,38 @@
-# main.py
+"""Griductive composition root.
+
+Only this module loads and validates the selected level and wires application
+dependencies. UI behavior belongs to ``gui.app``.
+"""
+
+from pathlib import Path
+
+from game.game_engine import GameEngine
 from game.level_loader import load_level
 from game.level_validator import validate_level
-from game.game_engine import GameEngine
-from logic.semantic_evaluator import evaluate_clue
+from gui.app import run_app
+from gui.character_loader import load_characters
+from logic.deductive_agent import DeductiveAgent
+
+DEFAULT_LEVEL_PATH = Path("data/levels/level_01.json")
+DEFAULT_CHARACTER_PATH = Path("data/characters.json")
+
+
+def create_engine(
+    level_path: str | Path = DEFAULT_LEVEL_PATH,
+    agent: DeductiveAgent | None = None,
+) -> GameEngine:
+    """Load a valid level and return a fully wired game engine."""
+    level = load_level(level_path)
+    validate_level(level)
+    return GameEngine(level, agent=agent)
+
 
 def main() -> None:
-    level = load_level("data/levels/level_01.json")
-    validate_level(level)
+    """Create the application dependencies and hand control to the GUI."""
+    engine = create_engine()
+    characters = load_characters(DEFAULT_CHARACTER_PATH)
+    run_app(engine, characters)
 
-    assignment = {
-        cell_id: verdict.value == "CRIMINAL"
-        for cell_id, verdict
-        in level.hidden_solution.items()
-    }
-
-    print(f"Loaded level: {level.title}")
-    print(f"Grid size: {level.size}x{level.size}")
-    print(f"Cells: {len(level.cells)}")
-    print(f"Clues: {len(level.clues)}")
-    print()
-
-    for clue in level.clues.values():
-        result = evaluate_clue(
-            clue,
-            assignment,
-            level.cells,
-        )
-
-        print(
-            f"{clue.id}: {result} | "
-            f"{clue.display_text}"
-        )
-    engine = GameEngine(level)
-    public_state = engine.get_public_state()
-
-    print()
-    print("PUBLIC STATE")
-    print(f"Level: {public_state.level_id}")
-
-    print("Revealed clues:")
-    for clue in public_state.revealed_clues:
-        print(f"- {clue.id}: {clue.display_text}")
-
-    print("Proved verdicts:")
-    for cell_id, verdict in public_state.proved_verdicts.items():
-        print(f"- {cell_id}: {verdict.value}")
-
-    print(
-        "Unresolved cells:",
-        ", ".join(public_state.unresolved_cells),
-    )
 
 if __name__ == "__main__":
     main()

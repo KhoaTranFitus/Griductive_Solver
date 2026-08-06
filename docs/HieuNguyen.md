@@ -66,14 +66,85 @@ def classify_character(
 
 ```python
 class DeductiveAgent:
-    def classify_all(self, public_state):
+    def __init__(
+        self,
+        solver: DPLLSolver | None = None,
+    ) -> None:
         ...
 
-    def choose_next_move(self, public_state):
+    def classify_all(
+        self,
+        public_state: PublicState,
+    ) -> dict[str, Verdict]:
+        ...
+
+    def choose_next_move(
+        self,
+        public_state: PublicState,
+    ) -> AgentMove | None:
         ...
 ```
 
-The exact constructor dependencies should be discussed with the team leader. The agent will normally need a CNF encoder, variable map, and DPLL solver.
+This interface is final for the first integration version.
+
+Constructor rules:
+
+- `solver=None` creates a `DPLLSolver` internally.
+- Passing a solver enables deterministic unit tests and future solver variants.
+- The CNF encoder and variable map use the shared stateless interfaces from
+  Member 1; they are not separately injected in the first version.
+
+Method contract:
+
+- Both methods receive `PublicState` only. They must not receive `Level`,
+  `GameState`, hidden solutions, or unrevealed clues.
+- `classify_all` returns exactly one entry for every ID in
+  `public_state.unresolved_cells` and no entry for an already proved cell.
+- The returned dictionary follows the row-major order of
+  `public_state.unresolved_cells`.
+- If the Knowledge Base is inconsistent, every unresolved cell is classified
+  as `Verdict.INCONSISTENT`.
+- `choose_next_move` returns the first row-major cell classified as
+  `CRIMINAL` or `INNOCENT`.
+- `choose_next_move` returns `None` when every unresolved cell is `UNKNOWN`,
+  when the Knowledge Base is inconsistent, or when the puzzle is already
+  solved.
+- The agent must not mutate `PublicState`, its contained collections, or the
+  generated Knowledge Base.
+
+Required imports for the public interface:
+
+```python
+from core.enums import Verdict
+from core.models import AgentMove, PublicState
+from logic.dpll import DPLLSolver
+```
+
+### DPLL result contract
+
+The existing `logic.dpll.SolverResult` is the canonical result type:
+
+```python
+@dataclass(frozen=True)
+class SolverResult:
+    satisfiable: bool
+    assignment: dict[int, bool] | None
+    decisions: int
+    propagations: int
+    backtracks: int
+    runtime_ms: float
+```
+
+Result rules:
+
+- SAT: `satisfiable=True` and `assignment` is a complete assignment for every
+  variable appearing in clauses or assumptions.
+- UNSAT: `satisfiable=False` and `assignment=None`.
+- Statistics are reset for each `solve` call.
+- `runtime_ms` is non-negative.
+- Solver inputs are not mutated.
+- `SolverStatistics` in `core.models` is the internal mutable counter used
+  during search; it is not a second public solver result type.
 
 ## 4. DPLL representation
 

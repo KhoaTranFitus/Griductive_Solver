@@ -82,10 +82,13 @@ def load_level(file_path: str | Path) -> Level:
     raw = _read_json(file_path)
 
     try:
-        cells = tuple(
-            _parse_cell(raw_cell)
-            for raw_cell in raw["cells"]
-        )
+        cells = tuple(sorted(
+            (
+                _parse_cell(raw_cell)
+                for raw_cell in raw["cells"]
+            ),
+            key=lambda cell: (cell.row, cell.column),
+        ))
 
         clue_list = [
             _parse_clue(raw_clue)

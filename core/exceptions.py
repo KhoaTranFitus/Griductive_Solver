@@ -11,6 +11,10 @@ class LevelValidationError(GriductiveError):
     """Raised when level data is invalid."""
 
 
+class CharacterLoadError(GriductiveError):
+    """Raised when the public character catalog cannot be loaded."""
+
+
 class RegionResolutionError(GriductiveError):
     """Raised when a region cannot be resolved."""
 

@@ -16,6 +16,7 @@ from core.enums import (
 class Character:
     id: str
     name: str
+    gender: str
     occupation: str
     avatar_path: str
 

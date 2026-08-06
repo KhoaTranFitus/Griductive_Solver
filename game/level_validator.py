@@ -35,13 +35,14 @@ def _validate_clue(
                 f"unknown person: {person}"
             )
 
-        try:
-            Verdict(status)
-        except ValueError as exc:
+        if status not in {
+            Verdict.CRIMINAL.value,
+            Verdict.INNOCENT.value,
+        }:
             raise LevelValidationError(
                 f"FACT clue {clue.id} has "
                 f"invalid status: {status}"
-            ) from exc
+            )
 
     elif clue.type in {
         ClueType.SAME,
