@@ -341,3 +341,186 @@ def test_dpll_is_deterministic_across_runs():
         )
 
     assert all(run == runs[0] for run in runs[1:])
+
+
+def test_solve_sat_by_unit_propagation_only():
+    result = DPLLSolver().solve([[1], [-1, 2]])
+
+    assert result.satisfiable is True
+    assert result.assignment == {1: True, 2: True}
+    assert result.decisions == 0
+    assert result.propagations == 2
+    assert result.backtracks == 0
+    assert result.runtime_ms >= 0
+
+
+def test_solve_immediate_unsat():
+    result = DPLLSolver().solve([[1], [-1]])
+
+    assert result.satisfiable is False
+    assert result.assignment is None
+    assert result.decisions == 0
+    assert result.propagations == 1
+    assert result.backtracks == 0
+    assert result.runtime_ms >= 0
+
+
+def test_solve_sat_requiring_branching():
+    result = DPLLSolver().solve([[1, 2], [-1, 2]])
+
+    assert result.satisfiable is True
+    assert result.assignment == {1: True, 2: True}
+    assert result.decisions == 1
+    assert result.propagations == 1
+    assert result.backtracks == 0
+
+
+def test_solve_unsat_requiring_branching():
+    clauses = [[1, 2], [1, -2], [-1, 2], [-1, -2]]
+
+    result = DPLLSolver().solve(clauses)
+
+    assert result.satisfiable is False
+    assert result.assignment is None
+    assert result.decisions == 2
+    assert result.propagations == 2
+    assert result.backtracks == 2
+
+
+def test_solve_assumption_forces_another_variable():
+    result = DPLLSolver().solve([[1, 2]], assumptions=[-1])
+
+    assert result.satisfiable is True
+    assert result.assignment == {1: False, 2: True}
+    assert result.decisions == 0
+    assert result.propagations == 1
+    assert result.backtracks == 0
+
+
+def test_solve_assumption_contradicts_formula():
+    result = DPLLSolver().solve([[1]], assumptions=[-1])
+
+    assert result.satisfiable is False
+    assert result.assignment is None
+    assert result.decisions == 0
+    assert result.propagations == 0
+    assert result.backtracks == 0
+
+
+def test_solve_rejects_contradictory_assumptions():
+    result = DPLLSolver().solve([], assumptions=[1, -1])
+
+    assert result.satisfiable is False
+    assert result.assignment is None
+    assert result.decisions == 0
+    assert result.propagations == 0
+    assert result.backtracks == 0
+
+
+def test_solve_accepts_repeated_identical_assumptions():
+    result = DPLLSolver().solve([], assumptions=[3, 3])
+
+    assert result.satisfiable is True
+    assert result.assignment == {3: True}
+
+
+def test_solve_includes_assumption_variable_not_in_clauses():
+    result = DPLLSolver().solve([], assumptions=[-5])
+
+    assert result.satisfiable is True
+    assert result.assignment == {5: False}
+
+
+def test_solve_returns_complete_assignment():
+    result = DPLLSolver().solve([[1, 2]])
+
+    assert result.satisfiable is True
+    assert result.assignment == {1: True, 2: False}
+
+
+def test_solve_handles_empty_cnf():
+    result = DPLLSolver().solve([])
+
+    assert result.satisfiable is True
+    assert result.assignment == {}
+    assert result.decisions == 0
+    assert result.propagations == 0
+    assert result.backtracks == 0
+
+
+def test_solve_handles_cnf_containing_empty_clause():
+    result = DPLLSolver().solve([[]])
+
+    assert result.satisfiable is False
+    assert result.assignment is None
+    assert result.decisions == 0
+    assert result.propagations == 0
+    assert result.backtracks == 0
+
+
+def test_solve_rejects_zero_literal_in_clause():
+    with pytest.raises(ValueError):
+        DPLLSolver().solve([[1, 0]])
+
+
+def test_solve_rejects_zero_literal_in_assumptions():
+    with pytest.raises(ValueError):
+        DPLLSolver().solve([], assumptions=[0])
+
+
+def test_solve_does_not_mutate_inputs():
+    clauses = [[1, 2], [-1, 3]]
+    assumptions = [-2]
+    original_clauses = [clause.copy() for clause in clauses]
+    original_assumptions = assumptions.copy()
+
+    DPLLSolver().solve(clauses, assumptions)
+
+    assert clauses == original_clauses
+    assert all(
+        clause == original_clause
+        for clause, original_clause in zip(clauses, original_clauses)
+    )
+    assert assumptions == original_assumptions
+
+
+def test_solve_resets_statistics_between_calls():
+    solver = DPLLSolver()
+    first_result = solver.solve([[1, 2], [-1, 2]])
+
+    second_result = solver.solve([])
+
+    assert first_result.decisions == 1
+    assert second_result.decisions == 0
+    assert second_result.propagations == 0
+    assert second_result.backtracks == 0
+
+
+def test_solve_is_deterministic_across_runs():
+    solver = DPLLSolver()
+    clauses = [[-1, 2], [-1, -2], [1, 3]]
+    runs = []
+
+    for _ in range(5):
+        result = solver.solve(clauses)
+        runs.append(
+            (
+                result.satisfiable,
+                result.assignment,
+                result.decisions,
+                result.propagations,
+                result.backtracks,
+            )
+        )
+
+    assert all(run == runs[0] for run in runs[1:])
+
+
+def test_solve_supports_sparse_variable_ids():
+    clauses = [[2, 10], [-10, 25]]
+
+    result = DPLLSolver().solve(clauses)
+
+    assert result.satisfiable is True
+    assert result.assignment is not None
+    assert set(result.assignment) == {2, 10, 25}

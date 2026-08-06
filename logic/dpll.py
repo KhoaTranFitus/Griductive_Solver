@@ -1,4 +1,5 @@
 # logic/dpll.py
+import time
 from dataclasses import dataclass
 from enum import Enum
 
@@ -42,9 +43,76 @@ class DPLLSolver:
         clauses: list[list[int]],
         assumptions: list[int] | None = None,
     ) -> SolverResult:
-        """Solve a CNF formula once the full DPLL algorithm is implemented."""
-        raise NotImplementedError(
-            "Full DPLL solving is not implemented yet."
+        """Solve a CNF formula with temporary literal assumptions."""
+        start_time = time.perf_counter()
+        statistics = SolverStatistics()
+        assumption_literals = assumptions if assumptions is not None else []
+        variable_ids: set[int] = set()
+
+        for clause in clauses:
+            for literal in clause:
+                if literal == 0:
+                    raise ValueError("Clause cannot contain literal 0.")
+
+                variable_ids.add(abs(literal))
+
+        for literal in assumption_literals:
+            if literal == 0:
+                raise ValueError("Assumptions cannot contain literal 0.")
+
+            variable_ids.add(abs(literal))
+
+        initial_assignment: dict[int, bool] = {}
+
+        for literal in assumption_literals:
+            variable_id = abs(literal)
+            required_value = literal > 0
+
+            if variable_id not in initial_assignment:
+                initial_assignment[variable_id] = required_value
+                continue
+
+            if initial_assignment[variable_id] != required_value:
+                runtime_ms = (time.perf_counter() - start_time) * 1000
+                return SolverResult(
+                    satisfiable=False,
+                    assignment=None,
+                    decisions=statistics.decisions,
+                    propagations=statistics.propagations,
+                    backtracks=statistics.backtracks,
+                    runtime_ms=runtime_ms,
+                )
+
+        result = self._dpll(
+            clauses,
+            initial_assignment,
+            statistics,
+        )
+
+        if result is None:
+            runtime_ms = (time.perf_counter() - start_time) * 1000
+            return SolverResult(
+                satisfiable=False,
+                assignment=None,
+                decisions=statistics.decisions,
+                propagations=statistics.propagations,
+                backtracks=statistics.backtracks,
+                runtime_ms=runtime_ms,
+            )
+
+        complete_assignment = {
+            variable_id: result.get(variable_id, False)
+            for variable_id in sorted(variable_ids)
+        }
+
+        runtime_ms = (time.perf_counter() - start_time) * 1000
+        return SolverResult(
+            satisfiable=True,
+            assignment=complete_assignment,
+            decisions=statistics.decisions,
+            propagations=statistics.propagations,
+            backtracks=statistics.backtracks,
+            runtime_ms=runtime_ms,
         )
 
     @staticmethod
