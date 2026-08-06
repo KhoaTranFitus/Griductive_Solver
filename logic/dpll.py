@@ -109,3 +109,73 @@ class DPLLSolver:
             )
 
         return ClauseAnalysis(ClauseState.UNRESOLVED)
+
+    @classmethod
+    def _has_conflict(
+        cls,
+        clauses: list[list[int]],
+        assignment: dict[int, bool],
+    ) -> bool:
+        """Return whether any clause conflicts with the assignment."""
+        return any(
+            cls._analyze_clause(clause, assignment).state
+            is ClauseState.CONFLICT
+            for clause in clauses
+        )
+
+    @classmethod
+    def _all_clauses_satisfied(
+        cls,
+        clauses: list[list[int]],
+        assignment: dict[int, bool],
+    ) -> bool:
+        """Return whether every clause is satisfied by the assignment."""
+        return all(
+            cls._analyze_clause(clause, assignment).state
+            is ClauseState.SATISFIED
+            for clause in clauses
+        )
+
+    @classmethod
+    def _find_unit_literal(
+        cls,
+        clauses: list[list[int]],
+        assignment: dict[int, bool],
+    ) -> int | None:
+        """Return the first unit literal in input clause order, if any."""
+        for clause in clauses:
+            analysis = cls._analyze_clause(clause, assignment)
+
+            if analysis.state is ClauseState.UNIT:
+                return analysis.unit_literal
+
+        return None
+
+    @classmethod
+    def _unit_propagate(
+        cls,
+        clauses: list[list[int]],
+        assignment: dict[int, bool],
+        statistics: SolverStatistics,
+    ) -> bool:
+        """Apply unit assignments in place until stable or conflicting."""
+        while True:
+            if cls._has_conflict(clauses, assignment):
+                return False
+
+            unit_literal = cls._find_unit_literal(clauses, assignment)
+
+            if unit_literal is None:
+                return True
+
+            variable_id = abs(unit_literal)
+            required_value = unit_literal > 0
+
+            if variable_id in assignment:
+                if assignment[variable_id] != required_value:
+                    return False
+
+                continue
+
+            assignment[variable_id] = required_value
+            statistics.propagations += 1
