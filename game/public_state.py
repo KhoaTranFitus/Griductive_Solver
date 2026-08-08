@@ -7,10 +7,17 @@ def build_public_state(
     level: Level,
     game_state: GameState,
 ) -> PublicState:
-    revealed_clues = tuple(
-        level.get_clue(cell.clue_id)
+    cells_by_id = {cell.id: cell for cell in level.cells}
+    ordered_revealed = list(game_state.reveal_order)
+    ordered_revealed.extend(
+        cell.id
         for cell in level.cells
         if cell.id in game_state.revealed_cells
+        and cell.id not in set(ordered_revealed)
+    )
+    revealed_clues = tuple(
+        level.get_clue(cells_by_id[cell_id].clue_id)
+        for cell_id in ordered_revealed
     )
 
     unresolved_cells = tuple(

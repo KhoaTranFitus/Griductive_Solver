@@ -105,3 +105,43 @@ def test_exactly_equivalence():
     for k in range(4): # k = 0, 1, 2, 3
         clue = Clue(id="1", owner_cell="A1", type=ClueType.EXACTLY, data={"k": k, "region": {"type": "EXPLICIT", "cells": ["A1", "B1", "C1"]}}, display_text="")
         check_equivalence(clue, cells, ["A1", "B1", "C1"])
+
+
+@pytest.mark.parametrize("status", ["CRIMINAL", "INNOCENT"])
+def test_exactly_status_equivalence(status):
+    cells = (make_cell("A1", 1, 1), make_cell("B1", 1, 2), make_cell("C1", 1, 3))
+    clue = Clue("1", "A1", ClueType.EXACTLY, {
+        "k": 2, "status": status,
+        "region": {"type": "ROW", "index": 1},
+    }, "")
+    check_equivalence(clue, cells, ["A1", "B1", "C1"])
+
+
+def test_parity_equivalence():
+    cells = (make_cell("A1", 1, 1), make_cell("B1", 1, 2), make_cell("C1", 1, 3))
+    clue = Clue("1", "A1", ClueType.PARITY, {
+        "parity": "ODD", "status": "INNOCENT",
+        "region": {"type": "ROW", "index": 1},
+    }, "")
+    check_equivalence(clue, cells, ["A1", "B1", "C1"])
+
+
+@pytest.mark.parametrize("clue_type", [ClueType.EQUAL_COUNT, ClueType.COMPARE_COUNT])
+def test_count_relation_equivalence(clue_type):
+    cells = tuple(make_cell(f"{column}{row}", row, col) for row in (1, 2) for col, column in enumerate("AB", 1))
+    data = {"status": "CRIMINAL"}
+    if clue_type is ClueType.EQUAL_COUNT:
+        data.update(region1={"type": "ROW", "index": 1}, region2={"type": "ROW", "index": 2})
+    else:
+        data.update(operator="GT", left_region={"type": "ROW", "index": 1}, right_region={"type": "ROW", "index": 2})
+    clue = Clue("1", "A1", clue_type, data, "")
+    check_equivalence(clue, cells, [cell.id for cell in cells])
+
+
+def test_connected_equivalence():
+    cells = tuple(make_cell(f"{column}{row}", row, col) for row in (1, 2) for col, column in enumerate("AB", 1))
+    clue = Clue("1", "A1", ClueType.CONNECTED, {
+        "status": "CRIMINAL", "connectivity": "ORTHOGONAL",
+        "region": {"type": "EXPLICIT", "cells": [cell.id for cell in cells]},
+    }, "")
+    check_equivalence(clue, cells, [cell.id for cell in cells])

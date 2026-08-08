@@ -1014,3 +1014,34 @@ Branch suggestion:
 ```text
 feature/core-engine
 ```
+
+## 28. Công việc bổ sung — Separate Uniqueness Checker
+
+Phụ trách xây dựng bộ kiểm tra nghiệm duy nhất độc lập cho từng level.
+
+File dự kiến:
+
+```text
+game/level_analyzer.py
+tests/test_level_analyzer.py
+```
+
+Công việc cần thực hiện:
+
+- Xây dựng full Knowledge Base từ toàn bộ clue của level.
+- Giải lần thứ nhất để lấy một complete assignment.
+- Tạo blocking clause loại bỏ nghiệm vừa tìm được.
+- Giải lần thứ hai để phân biệt `UNIQUE`, `MULTIPLE` và `UNSAT`.
+- Không dùng hidden solution để quyết định tính duy nhất.
+- Trả về hai assignment khác nhau khi level có nhiều nghiệm để hỗ trợ debug.
+- Kiểm tra đầy đủ sáu level chính thức.
+- Phối hợp kết quả uniqueness với Experiment Runner.
+
+Definition of Done:
+
+```text
+Có API kiểm tra uniqueness độc lập.
+Phân biệt đúng UNIQUE, MULTIPLE và UNSAT.
+Cả sáu level chính thức trả về UNIQUE.
+Có test cho cả ba trạng thái.
+```

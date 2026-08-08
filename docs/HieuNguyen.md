@@ -529,3 +529,45 @@ Branch suggestion:
 ```text
 feature/dpll-agent
 ```
+
+## 12. Công việc bổ sung — Experiment Runner và CSV
+
+Phụ trách thu thập và tổng hợp số liệu thực nghiệm của DPLL và Deductive Agent.
+
+File dự kiến:
+
+```text
+experiments/__init__.py
+experiments/run_experiments.py
+results/experiments.csv
+tests/test_experiments.py
+```
+
+Công việc cần thực hiện:
+
+- Đếm tổng số lần gọi SAT trong mỗi lần giải level.
+- Cộng dồn `decisions`, `propagations`, `backtracks` và `runtime_ms`.
+- Ghi số bước suy luận và reveal waves.
+- Nhận số primary variables, auxiliary variables và clauses từ CNF encoder.
+- Nhận kết quả uniqueness từ Level Analyzer.
+- Chạy cùng một quy trình trên toàn bộ puzzle 3x3, 4x4 và 5x5.
+- Ghi cả trường hợp `SOLVED`, `STUCK`, `INCONSISTENT`, `TIMEOUT` và `ERROR`.
+- Xuất CSV bằng thư viện chuẩn `csv`, với thứ tự cột cố định.
+- Không loại bỏ các lần chạy thất bại khỏi kết quả.
+
+Các cột CSV tối thiểu:
+
+```text
+level_id,size,primary_variables,auxiliary_variables,clauses,
+sat_calls,decisions,propagations,backtracks,deduction_steps,
+reveal_waves,runtime_ms,uniqueness,status
+```
+
+Definition of Done:
+
+```text
+Chạy được python experiments/run_experiments.py.
+Sinh results/experiments.csv.
+Mỗi level có đúng một dòng kết quả.
+Thống kê được cộng dồn chính xác và có test.
+```

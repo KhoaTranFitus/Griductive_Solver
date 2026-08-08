@@ -1,0 +1,417 @@
+{
+    "id": "level_03",
+    "title": "Crossed Testimonies",
+    "size": 4,
+    "cells": [
+        {
+            "id": "A1",
+            "row": 1,
+            "column": 1,
+            "character_id": "char_01",
+            "clue_id": "clue_A1"
+        },
+        {
+            "id": "B1",
+            "row": 1,
+            "column": 2,
+            "character_id": "char_02",
+            "clue_id": "clue_B1"
+        },
+        {
+            "id": "C1",
+            "row": 1,
+            "column": 3,
+            "character_id": "char_03",
+            "clue_id": "clue_C1"
+        },
+        {
+            "id": "D1",
+            "row": 1,
+            "column": 4,
+            "character_id": "char_04",
+            "clue_id": "clue_D1"
+        },
+        {
+            "id": "A2",
+            "row": 2,
+            "column": 1,
+            "character_id": "char_05",
+            "clue_id": "clue_A2"
+        },
+        {
+            "id": "B2",
+            "row": 2,
+            "column": 2,
+            "character_id": "char_06",
+            "clue_id": "clue_B2"
+        },
+        {
+            "id": "C2",
+            "row": 2,
+            "column": 3,
+            "character_id": "char_07",
+            "clue_id": "clue_C2"
+        },
+        {
+            "id": "D2",
+            "row": 2,
+            "column": 4,
+            "character_id": "char_08",
+            "clue_id": "clue_D2"
+        },
+        {
+            "id": "A3",
+            "row": 3,
+            "column": 1,
+            "character_id": "char_09",
+            "clue_id": "clue_A3"
+        },
+        {
+            "id": "B3",
+            "row": 3,
+            "column": 2,
+            "character_id": "char_10",
+            "clue_id": "clue_B3"
+        },
+        {
+            "id": "C3",
+            "row": 3,
+            "column": 3,
+            "character_id": "char_11",
+            "clue_id": "clue_C3"
+        },
+        {
+            "id": "D3",
+            "row": 3,
+            "column": 4,
+            "character_id": "char_12",
+            "clue_id": "clue_D3"
+        },
+        {
+            "id": "A4",
+            "row": 4,
+            "column": 1,
+            "character_id": "char_13",
+            "clue_id": "clue_A4"
+        },
+        {
+            "id": "B4",
+            "row": 4,
+            "column": 2,
+            "character_id": "char_14",
+            "clue_id": "clue_B4"
+        },
+        {
+            "id": "C4",
+            "row": 4,
+            "column": 3,
+            "character_id": "char_15",
+            "clue_id": "clue_C4"
+        },
+        {
+            "id": "D4",
+            "row": 4,
+            "column": 4,
+            "character_id": "char_16",
+            "clue_id": "clue_D4"
+        }
+    ],
+    "initial_revealed": [
+        "C2"
+    ],
+    "solution": {
+        "A1": "INNOCENT",
+        "B1": "CRIMINAL",
+        "C1": "INNOCENT",
+        "D1": "CRIMINAL",
+        "A2": "CRIMINAL",
+        "B2": "CRIMINAL",
+        "C2": "INNOCENT",
+        "D2": "INNOCENT",
+        "A3": "INNOCENT",
+        "B3": "INNOCENT",
+        "C3": "CRIMINAL",
+        "D3": "CRIMINAL",
+        "A4": "CRIMINAL",
+        "B4": "INNOCENT",
+        "C4": "INNOCENT",
+        "D4": "CRIMINAL"
+    },
+    "clues": [
+        {
+            "id": "clue_C2",
+            "owner_cell": "C2",
+            "type": "DIFFERENT",
+            "data": {
+                "person1": "C2",
+                "person2": "A4"
+            },
+            "display_text": "Exactly one of Grace and Mia is criminal."
+        },
+        {
+            "id": "clue_A4",
+            "owner_cell": "A4",
+            "type": "EXACTLY",
+            "data": {
+                "k": 0,
+                "status": "INNOCENT",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "A4",
+                        "B1"
+                    ]
+                }
+            },
+            "display_text": "Exactly 0 of Mia and Benjamin are innocent."
+        },
+        {
+            "id": "clue_B1",
+            "owner_cell": "B1",
+            "type": "PARITY",
+            "data": {
+                "parity": "ODD",
+                "status": "INNOCENT",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2",
+                        "B1",
+                        "D3"
+                    ]
+                }
+            },
+            "display_text": "An odd number of innocents are among Grace, Benjamin, Liam."
+        },
+        {
+            "id": "clue_D3",
+            "owner_cell": "D3",
+            "type": "EQUAL_COUNT",
+            "data": {
+                "status": "INNOCENT",
+                "region1": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "A1"
+                    ]
+                },
+                "region2": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2"
+                    ]
+                }
+            },
+            "display_text": "Alice and Grace represent an equal number of innocents."
+        },
+        {
+            "id": "clue_A1",
+            "owner_cell": "A1",
+            "type": "COMPARE_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "operator": "LT",
+                "left_region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C4"
+                    ]
+                },
+                "right_region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "A4"
+                    ]
+                }
+            },
+            "display_text": "Olivia represents fewer criminals than Mia."
+        },
+        {
+            "id": "clue_C4",
+            "owner_cell": "C4",
+            "type": "SAME",
+            "data": {
+                "person1": "C4",
+                "person2": "C1"
+            },
+            "display_text": "Olivia and Clara have the same verdict."
+        },
+        {
+            "id": "clue_C1",
+            "owner_cell": "C1",
+            "type": "EXACTLY",
+            "data": {
+                "k": 0,
+                "status": "CRIMINAL",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C1",
+                        "B4"
+                    ]
+                }
+            },
+            "display_text": "Exactly 0 of Clara and Noah are criminal."
+        },
+        {
+            "id": "clue_B4",
+            "owner_cell": "B4",
+            "type": "PARITY",
+            "data": {
+                "parity": "EVEN",
+                "status": "CRIMINAL",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2",
+                        "B4",
+                        "D2"
+                    ]
+                }
+            },
+            "display_text": "An even number of criminals are among Grace, Noah, Henry."
+        },
+        {
+            "id": "clue_D2",
+            "owner_cell": "D2",
+            "type": "EQUAL_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "region1": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "A2"
+                    ]
+                },
+                "region2": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "A4"
+                    ]
+                }
+            },
+            "display_text": "Emma and Mia represent an equal number of criminals."
+        },
+        {
+            "id": "clue_A2",
+            "owner_cell": "A2",
+            "type": "COMPARE_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "operator": "GT",
+                "left_region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "D4"
+                    ]
+                },
+                "right_region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2"
+                    ]
+                }
+            },
+            "display_text": "Peter represents more criminals than Grace."
+        },
+        {
+            "id": "clue_D4",
+            "owner_cell": "D4",
+            "type": "SAME",
+            "data": {
+                "person1": "D4",
+                "person2": "C3"
+            },
+            "display_text": "Peter and Katherine have the same verdict."
+        },
+        {
+            "id": "clue_C3",
+            "owner_cell": "C3",
+            "type": "CONNECTED",
+            "data": {
+                "status": "CRIMINAL",
+                "connectivity": "ORTHOGONAL",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "B1",
+                        "B2",
+                        "A2"
+                    ]
+                }
+            },
+            "display_text": "The criminals among Benjamin, Felix, Emma are connected."
+        },
+        {
+            "id": "clue_B2",
+            "owner_cell": "B2",
+            "type": "PARITY",
+            "data": {
+                "parity": "EVEN",
+                "status": "INNOCENT",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2",
+                        "B2",
+                        "A3"
+                    ]
+                }
+            },
+            "display_text": "An even number of innocents are among Grace, Felix, Iris."
+        },
+        {
+            "id": "clue_A3",
+            "owner_cell": "A3",
+            "type": "EQUAL_COUNT",
+            "data": {
+                "status": "INNOCENT",
+                "region1": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "B3"
+                    ]
+                },
+                "region2": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2"
+                    ]
+                }
+            },
+            "display_text": "Julian and Grace represent an equal number of innocents."
+        },
+        {
+            "id": "clue_B3",
+            "owner_cell": "B3",
+            "type": "COMPARE_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "operator": "GT",
+                "left_region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "D1"
+                    ]
+                },
+                "right_region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "C2"
+                    ]
+                }
+            },
+            "display_text": "Daniel represents more criminals than Grace."
+        },
+        {
+            "id": "clue_D1",
+            "owner_cell": "D1",
+            "type": "DIFFERENT",
+            "data": {
+                "person1": "D1",
+                "person2": "C2"
+            },
+            "display_text": "Exactly one of Daniel and Grace is criminal."
+        }
+    ]
+}

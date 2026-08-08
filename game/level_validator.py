@@ -1,5 +1,5 @@
 # game/level_validator.py
-from core.enums import ClueType, Verdict
+from core.enums import ClueType, CountOperator, Parity, Verdict
 from core.exceptions import LevelValidationError, RegionResolutionError
 from core.models import Clue, Level
 from logic.region_resolver import parse_region, resolve_region
@@ -85,13 +85,59 @@ def _validate_clue(
                 f"Invalid region in clue {clue.id}: {exc}"
             ) from exc
 
-        if clue.type != ClueType.PARITY:
+        status = clue.data.get("status", Verdict.CRIMINAL.value)
+        if status not in {Verdict.CRIMINAL.value, Verdict.INNOCENT.value}:
+            raise LevelValidationError(
+                f"Clue {clue.id} has invalid counting status: {status}"
+            )
+
+        if clue.type == ClueType.PARITY:
+            try:
+                Parity(clue.data.get("parity"))
+            except ValueError as exc:
+                raise LevelValidationError(
+                    f"Clue {clue.id} requires parity EVEN or ODD."
+                ) from exc
+        else:
             k = clue.data.get("k")
 
             if not isinstance(k, int):
                 raise LevelValidationError(
                     f"Clue {clue.id} requires integer k."
                 )
+
+    elif clue.type in {ClueType.EQUAL_COUNT, ClueType.COMPARE_COUNT}:
+        status = clue.data.get("status", Verdict.CRIMINAL.value)
+        if status not in {Verdict.CRIMINAL.value, Verdict.INNOCENT.value}:
+            raise LevelValidationError(f"Clue {clue.id} has invalid counting status: {status}")
+        raw_regions = (
+            (clue.data.get("region1"), clue.data.get("region2"))
+            if clue.type is ClueType.EQUAL_COUNT
+            else (clue.data.get("left_region"), clue.data.get("right_region"))
+        )
+        try:
+            for raw_region in raw_regions:
+                resolve_region(parse_region(raw_region), level.cells)
+        except RegionResolutionError as exc:
+            raise LevelValidationError(f"Invalid region in clue {clue.id}: {exc}") from exc
+        if clue.type is ClueType.COMPARE_COUNT:
+            try:
+                CountOperator(clue.data.get("operator"))
+            except ValueError as exc:
+                raise LevelValidationError(
+                    f"Clue {clue.id} requires operator GT or LT."
+                ) from exc
+
+    elif clue.type is ClueType.CONNECTED:
+        if clue.data.get("connectivity", "ORTHOGONAL") != "ORTHOGONAL":
+            raise LevelValidationError(f"Clue {clue.id} only supports ORTHOGONAL connectivity.")
+        status = clue.data.get("status", Verdict.CRIMINAL.value)
+        if status not in {Verdict.CRIMINAL.value, Verdict.INNOCENT.value}:
+            raise LevelValidationError(f"Clue {clue.id} has invalid connected status: {status}")
+        try:
+            resolve_region(parse_region(clue.data.get("region")), level.cells)
+        except RegionResolutionError as exc:
+            raise LevelValidationError(f"Invalid region in clue {clue.id}: {exc}") from exc
 
             if not 0 <= k <= len(resolved_ids):
                 raise LevelValidationError(

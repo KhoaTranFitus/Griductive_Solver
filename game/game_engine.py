@@ -25,6 +25,7 @@ class GameEngine:
         return GameState(
             revealed_cells=set(self._level.initial_revealed),
             proved_verdicts=initial_verdicts,
+            reveal_order=list(self._level.initial_revealed),
         )
 
     def get_public_state(self) -> PublicState:
