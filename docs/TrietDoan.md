@@ -471,3 +471,84 @@ Branch suggestion:
 ```text
 feature/gui-assets
 ```
+
+## 19. Công việc bổ sung — Hoàn thiện giao diện theo trạng thái card và kích thước bàn
+
+Phụ trách cài đặt và chỉnh sửa giao diện để phù hợp với các màn chơi 3x3,
+4x4 và 5x5, đồng thời ưu tiên khả năng đọc clue.
+
+### 19.1 Card khi đang úp
+
+- Hiển thị avatar lớn, rõ và nằm ở trung tâm card.
+- Tên nhân vật nằm bên dưới avatar.
+- Nghề nghiệp có thể hiển thị nhỏ hơn tên.
+- Không để lộ verdict hoặc clue chưa được mở.
+- Tọa độ ô vẫn phải dễ nhìn.
+- Toàn bộ vùng card có thể bấm để mở popup chọn verdict.
+
+### 19.2 Card khi đã mở và có clue
+
+- Thu nhỏ avatar và tên nhân vật.
+- Ưu tiên diện tích cho nội dung clue.
+- Clue phải tự xuống dòng và không bị cắt mất nội dung.
+- Verdict `CRIMINAL` hoặc `INNOCENT` vẫn phải nhìn rõ nhưng không che clue.
+- Có thể dùng tooltip hoặc vùng cuộn khi clue dài trên bàn 5x5.
+- Màu nền, viền và chữ phải đảm bảo tương phản.
+
+### 19.3 Sửa hiển thị verdict trên ma trận lớn
+
+- Khắc phục lỗi chữ `CRIMINAL` và `INNOCENT` bị tràn, cắt hoặc chồng lên nội dung ở bàn 4x4 và 5x5.
+- Điều chỉnh font theo grid size.
+- Cho phép verdict xuống dòng hoặc dùng nhãn ngắn nếu chiều rộng card không đủ.
+- Không dùng kích thước cố định chỉ phù hợp với bàn 3x3.
+- Kiểm tra ở kích thước cửa sổ tối thiểu và khi resize.
+
+### 19.4 Revealed Clues và tương tác
+
+- Clue mới được tìm ra phải xuất hiện dưới cùng danh sách.
+- Tự cuộn xuống clue mới nhất khi danh sách dài.
+- Khi chọn clue, highlight đúng mọi cell được tham chiếu hoặc được đếm.
+- Giữ highlight rõ trên cả card úp và card mở.
+- Hiển thị tên nhân vật trong câu clue, không hiển thị mã ô cho người chơi.
+
+### 19.5 Điều hướng và trạng thái màn hình
+
+- Kiểm tra Main Menu, Select Level và Game Screen ở mọi kích thước cửa sổ.
+- Nút Back trở về đúng màn hình Select Level.
+- Nút Previous/Next chuyển đúng Level 1 đến Level 6.
+- Vô hiệu hóa mũi tên ở đầu và cuối danh sách.
+- Restart phải cập nhật lại board, clue list, highlight và status message.
+- Load level mới không được làm hỏng điều hướng hoặc giữ trạng thái level cũ.
+
+### 19.6 Phản hồi và thông báo
+
+- Hiển thị rõ `ACCEPTED`, `NOT_PROVABLE`, `CONTRADICTED` và `INCONSISTENT`.
+- Hint phải làm nổi bật nhân vật được đề xuất.
+- Auto Solve phải cho người dùng nhìn thấy từng bước reveal.
+- Dọn các thông báo `Logic Agent chưa sẵn sàng` sau khi logic đã tích hợp.
+- Không để popup verdict mở cho card đã được giải.
+
+### 19.7 Kiểm tra giao diện
+
+Kiểm tra thủ công tối thiểu:
+
+```text
+3x3: avatar, tên, nghề nghiệp và clue hiển thị đầy đủ
+4x4: verdict không tràn card
+5x5: clue đọc được và card không chồng lên nhau
+resize cửa sổ: layout không vỡ
+card úp: không lộ clue
+card mở: clue và verdict đúng
+revealed clues: đúng thứ tự tìm ra
+highlight: đúng vùng của mọi clue type
+```
+
+Definition of Done:
+
+```text
+Card úp ưu tiên avatar và tên.
+Card mở ưu tiên clue nhưng vẫn thấy rõ verdict.
+Không còn lỗi verdict trên bảng 4x4 và 5x5.
+Giao diện hoạt động ổn định trên cả sáu level.
+Không lộ hidden clue hoặc hidden solution.
+```

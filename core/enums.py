@@ -54,6 +54,24 @@ class ClueType(str, Enum):
     # Extension dự kiến (thêm ít nhất 2 cái)
     PARITY = "PARITY"
 
+    COMPARE_COUNT = "COMPARE_COUNT"
+    EQUAL_COUNT = "EQUAL_COUNT"
+
+    CONNECTED = "CONNECTED"
+
+
+class CountOperator(str, Enum):
+    """Comparison used by COMPARE_COUNT clues."""
+
+    GT = "GT"
+    LT = "LT"
+
+
+class Parity(str, Enum):
+    """Required parity used by PARITY clues."""
+
+    EVEN = "EVEN"
+    ODD = "ODD"
 
 class RegionType(str, Enum):
     """

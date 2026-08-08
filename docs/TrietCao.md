@@ -347,3 +347,54 @@ Branch suggestion:
 ```text
 feature/cnf-encoder
 ```
+
+## 9. Công việc bổ sung — Hoàn thiện Level Loader và Validator
+
+Phụ trách tăng độ chặt chẽ của dữ liệu đầu vào trước khi CNF encoder xử lý.
+Các thay đổi ở module dùng chung cần được Khoa Trần review.
+
+File liên quan:
+
+```text
+game/level_loader.py
+game/level_validator.py
+tests/test_loader.py
+tests/test_level_validation.py
+```
+
+Công việc cần thực hiện:
+
+- Phát hiện clue ID trùng trước khi chuyển danh sách clue thành dictionary.
+- Kiểm tra kiểu của `cells`, `clues`, `solution` và `initial_revealed`.
+- Báo lỗi rõ field và file gây lỗi.
+- Kiểm tra số clue bằng số cell.
+- Mỗi cell phải sở hữu đúng một clue.
+- Không có hai clue dùng cùng `owner_cell`.
+- `cell.clue_id` phải trỏ tới clue có `owner_cell` bằng chính cell đó.
+- Kiểm tra mọi cell ID và region được clue tham chiếu.
+- Kiểm tra counting status chỉ là `CRIMINAL` hoặc `INNOCENT`.
+- Kiểm tra `PARITY`, comparison operator và connectivity hợp lệ.
+- Kiểm tra clue đúng với hidden solution bằng direct semantic evaluator.
+- Không gọi GUI hoặc Logic Agent từ validator.
+
+Test cần bổ sung:
+
+```text
+duplicate clue ID
+duplicate owner_cell
+cell thiếu clue hoặc clue thừa
+cell trỏ tới clue của cell khác
+status/parity/operator/connectivity không hợp lệ
+region rỗng hoặc tham chiếu cell không tồn tại
+clue sai so với hidden solution
+sáu level chính thức đều hợp lệ
+```
+
+Definition of Done:
+
+```text
+Loader không làm mất duplicate clue.
+Validator phát hiện đầy đủ lỗi ownership và reference.
+Mọi clue chính thức đúng với hidden solution.
+Toàn bộ test pass.
+```

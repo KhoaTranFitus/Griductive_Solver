@@ -15,6 +15,16 @@ def test_reveal_cell():
     assert state.is_revealed("B1")
     assert state.is_resolved("B1")
     assert state.proved_verdicts["B1"] == Verdict.CRIMINAL
+    assert state.reveal_order == ["B1"]
+
+
+def test_reveal_order_appends_new_cells_and_ignores_duplicates():
+    state = GameState()
+    state.reveal_cell("C2", Verdict.INNOCENT)
+    state.reveal_cell("A1", Verdict.CRIMINAL)
+    state.reveal_cell("C2", Verdict.INNOCENT)
+
+    assert state.reveal_order == ["C2", "A1"]
 
 
 def test_cannot_reveal_unknown_verdict():
@@ -46,6 +56,7 @@ def test_reset_state():
     )
 
     assert state.revealed_cells == {"A1"}
+    assert state.reveal_order == ["A1"]
     assert state.proved_verdicts == {
         "A1": Verdict.INNOCENT
     }

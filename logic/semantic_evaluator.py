@@ -1,153 +1,75 @@
-# logic/semantic_evaluator.py
+"""Direct clue semantics used to verify CNF encodings and level solutions."""
+
 from core.enums import ClueType, Verdict
 from core.exceptions import UnsupportedClueError
 from core.models import Cell, Clue
 from logic.region_resolver import parse_region, resolve_region
 
-# Quy ước assignment
-# {
-#     "A1": True,   # Criminal
-#     "B1": False,  # Innocent
-# }
 
-def _evaluate_fact(
-    clue: Clue,
-    assignment: dict[str, bool],
-) -> bool:
-    person = clue.data["person"]
-    expected_status = Verdict(clue.data["status"])
-
-    actual_value = assignment[person]
-
-    if expected_status == Verdict.CRIMINAL:
-        return actual_value is True
-
-    if expected_status == Verdict.INNOCENT:
-        return actual_value is False
-
-    raise ValueError(
-        f"FACT clue cannot use status {expected_status}"
-    )
-
-def _evaluate_same(
-    clue: Clue,
-    assignment: dict[str, bool],
-) -> bool:
-    person1 = clue.data["person1"]
-    person2 = clue.data["person2"]
-
-    return assignment[person1] == assignment[person2]
-
-def _evaluate_different(
-    clue: Clue,
-    assignment: dict[str, bool],
-) -> bool:
-    person1 = clue.data["person1"]
-    person2 = clue.data["person2"]
-
-    return assignment[person1] != assignment[person2]
-
-def _count_criminals(
-    clue: Clue,
-    assignment: dict[str, bool],
-    cells: tuple[Cell, ...],
-) -> int:
-    region = parse_region(clue.data["region"])
-    cell_ids = resolve_region(region, cells)
-
+def _count(raw_region, status, assignment, cells) -> int:
+    ids = resolve_region(parse_region(raw_region), cells)
     return sum(
-        1
-        for cell_id in cell_ids
-        if assignment[cell_id] is True
+        assignment[cid] if status is Verdict.CRIMINAL else not assignment[cid]
+        for cid in ids
     )
 
-def _evaluate_exactly(
-    clue: Clue,
-    assignment: dict[str, bool],
-    cells: tuple[Cell, ...],
-) -> bool:
-    criminal_count = _count_criminals(
-        clue,
-        assignment,
-        cells,
-    )
 
-    return criminal_count == clue.data["k"]
+def _connected(clue, assignment, cells) -> bool:
+    ids = resolve_region(parse_region(clue.data["region"]), cells)
+    status = Verdict(clue.data.get("status", Verdict.CRIMINAL.value))
+    positions = {cell.id: (cell.row, cell.column) for cell in cells}
+    selected = {cid for cid in ids if assignment[cid] is (status is Verdict.CRIMINAL)}
+    if len(selected) <= 1:
+        return True
+    reached = {next(iter(selected))}
+    while True:
+        expanded = reached | {
+            candidate for candidate in selected
+            if any(
+                abs(positions[candidate][0] - positions[current][0])
+                + abs(positions[candidate][1] - positions[current][1]) == 1
+                for current in reached
+            )
+        }
+        if expanded == reached:
+            return reached == selected
+        reached = expanded
 
-def _evaluate_at_least(
-    clue: Clue,
-    assignment: dict[str, bool],
-    cells: tuple[Cell, ...],
-) -> bool:
-    criminal_count = _count_criminals(
-        clue,
-        assignment,
-        cells,
-    )
 
-    return criminal_count >= clue.data["k"]
+def evaluate_clue(clue: Clue, assignment: dict[str, bool], cells: tuple[Cell, ...]) -> bool:
+    missing = {cell.id for cell in cells} - assignment.keys()
+    if missing:
+        raise ValueError(f"Semantic evaluation requires a complete assignment. Missing: {sorted(missing)}")
 
-def _evaluate_at_most(
-    clue: Clue,
-    assignment: dict[str, bool],
-    cells: tuple[Cell, ...],
-) -> bool:
-    criminal_count = _count_criminals(
-        clue,
-        assignment,
-        cells,
-    )
+    if clue.type is ClueType.FACT:
+        expected = Verdict(clue.data["status"])
+        return assignment[clue.data["person"]] is (expected is Verdict.CRIMINAL)
+    if clue.type is ClueType.SAME:
+        return assignment[clue.data["person1"]] == assignment[clue.data["person2"]]
+    if clue.type is ClueType.DIFFERENT:
+        return assignment[clue.data["person1"]] != assignment[clue.data["person2"]]
 
-    return criminal_count <= clue.data["k"]
+    status = Verdict(clue.data.get("status", Verdict.CRIMINAL.value))
+    if clue.type in {ClueType.EXACTLY, ClueType.AT_LEAST, ClueType.AT_MOST, ClueType.PARITY}:
+        count = _count(clue.data["region"], status, assignment, cells)
+        if clue.type is ClueType.EXACTLY:
+            return count == clue.data["k"]
+        if clue.type is ClueType.AT_LEAST:
+            return count >= clue.data["k"]
+        if clue.type is ClueType.AT_MOST:
+            return count <= clue.data["k"]
+        return count % 2 == (0 if clue.data["parity"] == "EVEN" else 1)
 
-def evaluate_clue(
-    clue: Clue,
-    assignment: dict[str, bool],
-    cells: tuple[Cell, ...],
-) -> bool:
-    required_ids = {
-        cell.id
-        for cell in cells
-    }
+    if clue.type in {ClueType.EQUAL_COUNT, ClueType.COMPARE_COUNT}:
+        left_raw = clue.data.get("region1", clue.data.get("left_region"))
+        right_raw = clue.data.get("region2", clue.data.get("right_region"))
+        left = _count(left_raw, status, assignment, cells)
+        right = _count(right_raw, status, assignment, cells)
+        if clue.type is ClueType.EQUAL_COUNT:
+            return left == right
+        return left > right if clue.data["operator"] == "GT" else left < right
 
-    missing_ids = required_ids - assignment.keys()
+    if clue.type is ClueType.CONNECTED:
+        return _connected(clue, assignment, cells)
 
-    if missing_ids:
-        raise ValueError(
-            "Semantic evaluation requires a complete "
-            f"assignment. Missing: {sorted(missing_ids)}"
-        )
-
-    if clue.type == ClueType.FACT:
-        return _evaluate_fact(clue, assignment)
-
-    if clue.type == ClueType.SAME:
-        return _evaluate_same(clue, assignment)
-
-    if clue.type == ClueType.DIFFERENT:
-        return _evaluate_different(clue, assignment)
-
-    if clue.type == ClueType.EXACTLY:
-        return _evaluate_exactly(
-            clue,
-            assignment,
-            cells,
-        )
-
-    if clue.type == ClueType.AT_LEAST:
-        return _evaluate_at_least(
-            clue,
-            assignment,
-            cells,
-        )
-
-    if clue.type == ClueType.AT_MOST:
-        return _evaluate_at_most(
-            clue,
-            assignment,
-            cells,
-        )
-
-    raise UnsupportedClueError(
-        f"Unsupported clue type: {clue.type}"
-    )
+    raise UnsupportedClueError(f"Unsupported clue type: {clue.type}")

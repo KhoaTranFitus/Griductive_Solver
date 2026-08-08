@@ -41,6 +41,9 @@ class GameScreen(ctk.CTkFrame):
         engine: "GameEngine",
         characters: Mapping[str, Character],
         on_level_loaded: "callable | None" = None,
+        on_back: "callable | None" = None,
+        on_previous: "callable | None" = None,
+        on_next: "callable | None" = None,
         **kwargs,
     ) -> None:
         super().__init__(master, fg_color="#221e1d", **kwargs)
@@ -48,6 +51,9 @@ class GameScreen(ctk.CTkFrame):
         self._engine = engine
         self._characters = dict(characters)
         self._on_level_loaded = on_level_loaded
+        self._on_back = on_back
+        self._on_previous = on_previous
+        self._on_next = on_next
         self._highlighted_clue_id: str | None = None
         self._highlighted_cell: str | None = None
         self._cards: dict[str, CharacterCard] = {}
@@ -129,7 +135,17 @@ class GameScreen(ctk.CTkFrame):
 
         # Title
         title_frame = ctk.CTkFrame(self._board_container, fg_color="transparent")
-        title_frame.pack(pady=(0, 6))
+        title_frame.pack(fill="x", pady=(0, 6))
+
+        ctk.CTkButton(
+            title_frame,
+            text="← Levels",
+            width=86,
+            command=self._on_back,
+            state="normal" if self._on_back else "disabled",
+            fg_color="#3d3632",
+            hover_color="#4a433e",
+        ).pack(side="left", padx=(0, 12))
 
         ctk.CTkLabel(
             title_frame,
@@ -144,6 +160,25 @@ class GameScreen(ctk.CTkFrame):
             font=ctk.CTkFont(size=14),
             text_color="#8c8279",
         ).pack(side="left")
+
+        ctk.CTkButton(
+            title_frame,
+            text="→",
+            width=42,
+            command=self._on_next,
+            state="normal" if self._on_next else "disabled",
+            fg_color="#3d3632",
+            hover_color="#d4a574",
+        ).pack(side="right", padx=(6, 0))
+        ctk.CTkButton(
+            title_frame,
+            text="←",
+            width=42,
+            command=self._on_previous,
+            state="normal" if self._on_previous else "disabled",
+            fg_color="#3d3632",
+            hover_color="#d4a574",
+        ).pack(side="right")
 
         # Grid frame
         grid_frame = ctk.CTkFrame(self._board_container, fg_color="transparent")
@@ -268,6 +303,30 @@ class GameScreen(ctk.CTkFrame):
                     for cid in region_cells:
                         if cid not in highlights:
                             highlights[cid] = "#f1c40f"
+                except Exception:
+                    pass
+
+        elif ctype in (ClueType.EQUAL_COUNT, ClueType.COMPARE_COUNT):
+            raw_regions = (
+                (cdata.get("region1"), cdata.get("region2"))
+                if ctype == ClueType.EQUAL_COUNT
+                else (cdata.get("left_region"), cdata.get("right_region"))
+            )
+            for raw_region in raw_regions:
+                if not isinstance(raw_region, dict):
+                    continue
+                try:
+                    for cid in resolve_region(parse_region(raw_region), public_state.cells):
+                        highlights.setdefault(cid, "#f1c40f")
+                except Exception:
+                    pass
+
+        elif ctype == ClueType.CONNECTED:
+            raw_region = cdata.get("region")
+            if isinstance(raw_region, dict):
+                try:
+                    for cid in resolve_region(parse_region(raw_region), public_state.cells):
+                        highlights.setdefault(cid, "#9b59b6")
                 except Exception:
                     pass
 

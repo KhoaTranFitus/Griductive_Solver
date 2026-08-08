@@ -38,6 +38,9 @@ def test_submit_verdict_accepts_forced_value_and_reveals_clue():
     assert response.revealed_clue.id == "clue_B1"
     assert engine.get_public_state().proved_verdicts["B1"] is Verdict.CRIMINAL
     assert len(agent.received_states) == 1
+    assert [
+        clue.owner_cell for clue in engine.get_public_state().revealed_clues
+    ] == ["A1", "B1"]
 
 
 def test_submit_verdict_rejects_unknown_without_mutating_state():
