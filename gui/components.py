@@ -119,37 +119,37 @@ def create_placeholder(size: int = AVATAR_SIZE) -> ctk.CTkImage:
 # Card sizing configurations per grid size (3x3, 4x4, 5x5) for seamless auto-fit scaling
 _CARD_CONFIGS: dict[int, dict] = {
     3: {
-        "width": 150,
-        "height": 240,
-        "avatar_size": 58,
-        "font_name": 11,
-        "font_occ": 9,
-        "font_verdict": 9,
-        "font_clue": 8,
-        "padx": 5,
-        "pady": 5,
+        "width": 175,
+        "height": 265,
+        "avatar_size": 68,
+        "font_name": 13,
+        "font_occ": 10,
+        "font_verdict": 12,
+        "font_clue": 13,
+        "padx": 6,
+        "pady": 6,
     },
     4: {
-        "width": 115,
-        "height": 180,
-        "avatar_size": 40,
-        "font_name": 10,
-        "font_occ": 8,
-        "font_verdict": 8,
-        "font_clue": 7,
-        "padx": 3,
-        "pady": 3,
+        "width": 135,
+        "height": 210,
+        "avatar_size": 50,
+        "font_name": 12,
+        "font_occ": 9,
+        "font_verdict": 11,
+        "font_clue": 11,
+        "padx": 4,
+        "pady": 4,
     },
     5: {
-        "width": 92,
-        "height": 145,
-        "avatar_size": 30,
-        "font_name": 9,
-        "font_occ": 7,
-        "font_verdict": 7,
-        "font_clue": 7,
-        "padx": 2,
-        "pady": 2,
+        "width": 112,
+        "height": 175,
+        "avatar_size": 38,
+        "font_name": 11,
+        "font_occ": 8,
+        "font_verdict": 10,
+        "font_clue": 10,
+        "padx": 3,
+        "pady": 3,
     },
 }
 
@@ -159,8 +159,8 @@ class CharacterCard(ctk.CTkFrame):
 
     States
     ------
-    Face-down : neutral dark card, unknown verdict, clue hidden.
-    Face-up   : tinted background (green/red), verdict shown, clue visible.
+    Face-down : neutral dark card, prominent avatar, name, occupation. Clue hidden.
+    Face-up   : tinted background (green/red), verdict shown, clue prioritized.
     Highlighted : amber border glow (used by the HINT feature).
     """
 
@@ -177,7 +177,7 @@ class CharacterCard(ctk.CTkFrame):
             master,
             width=cfg["width"],
             height=cfg["height"],
-            corner_radius=14,
+            corner_radius=12,
             fg_color=BG_CARD,
             border_width=2,
             border_color=BORDER_DEFAULT,
@@ -193,57 +193,80 @@ class CharacterCard(ctk.CTkFrame):
         self._highlighted: bool = False
         self._on_click = on_click
 
-        # ── sub-widgets ──
+        # ── Top header strip (Coordinate + Status Indicator Dot) ──
+        top_strip = ctk.CTkFrame(self, fg_color="transparent")
+        top_strip.pack(fill="x", padx=6, pady=(4, 0))
+
         self._lbl_coord = ctk.CTkLabel(
-            self, text="",
+            top_strip, text="",
             font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
             text_color=TEXT_SECONDARY, height=14,
         )
-        self._lbl_coord.pack(padx=6, pady=(6, 0), anchor="nw")
+        self._lbl_coord.pack(side="left")
 
+        self._lbl_status_dot = ctk.CTkLabel(
+            top_strip, text="●",
+            font=ctk.CTkFont(size=9, weight="bold"),
+            text_color="#5a524c", height=14,
+        )
+        self._lbl_status_dot.pack(side="right")
+
+        # ── Avatar (Enlarged prominent size) ──
         self._lbl_avatar = ctk.CTkLabel(
             self, text="", width=cfg["avatar_size"], height=cfg["avatar_size"],
         )
-        self._lbl_avatar.pack(pady=(2, 2))
+        self._lbl_avatar.pack(pady=(1, 1))
 
+        # ── Name ──
         self._lbl_name = ctk.CTkLabel(
             self, text="",
             font=ctk.CTkFont(size=cfg["font_name"], weight="bold"),
             text_color=TEXT_PRIMARY, wraplength=cfg["width"] - 12,
         )
-        self._lbl_name.pack(padx=4)
+        self._lbl_name.pack(padx=4, pady=(0, 0))
 
+        # ── Occupation (Shifted up, tight under Name) ──
         self._lbl_occ = ctk.CTkLabel(
             self, text="",
             font=ctk.CTkFont(size=cfg["font_occ"]),
             text_color=TEXT_SECONDARY, wraplength=cfg["width"] - 12,
         )
-        self._lbl_occ.pack(padx=4, pady=(0, 2))
+        self._lbl_occ.pack(padx=4, pady=(0, 0))
 
+        # ── Verdict badge (Shifted up, tight under Occupation) ──
         self._lbl_verdict = ctk.CTkLabel(
-            self, text="?",
+            self, text="",
             font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
-            text_color=CLR_UNKNOWN, height=18,
+            text_color=CLR_UNKNOWN, height=14,
         )
-        self._lbl_verdict.pack(padx=6, pady=(2, 0))
+        self._lbl_verdict.pack(padx=4, pady=(0, 2))
 
+        # ── Clue text (maximizes lower area cleanly) ──
         self._lbl_clue = ctk.CTkLabel(
             self, text="",
             font=ctk.CTkFont(size=cfg["font_clue"]),
-            text_color=TEXT_SECONDARY,
-            wraplength=cfg["width"] - 14, justify="center",
+            text_color="#ffffff",
+            wraplength=cfg["width"] - 12, justify="center",
         )
-        self._lbl_clue.pack(padx=6, pady=(2, 6), fill="x", expand=True)
+        self._lbl_clue.pack(padx=4, pady=(1, 4), fill="both", expand=True)
 
-        # Click + hover bindings (card and all children)
+        # ── Bottom status accent bar ──
+        self._status_bar = ctk.CTkFrame(
+            self, height=3, corner_radius=2, fg_color=BORDER_DEFAULT
+        )
+        self._status_bar.pack(side="bottom", fill="x", padx=6, pady=(0, 3))
+
+        # Click + hover bindings (card and all descendant widgets)
         self.configure(cursor="hand2")
-        self.bind("<Button-1>", self._handle_click)
-        self.bind("<Enter>", self._on_enter)
-        self.bind("<Leave>", self._on_leave)
-        for child in self.winfo_children():
-            child.bind("<Button-1>", self._handle_click)
-            child.bind("<Enter>", self._on_enter)
-            child.bind("<Leave>", self._on_leave)
+        self._bind_click_recursive(self)
+
+    def _bind_click_recursive(self, widget: ctk.CTkBaseClass) -> None:
+        """Bind click and hover events recursively to widget and children."""
+        widget.bind("<Button-1>", self._handle_click)
+        widget.bind("<Enter>", self._on_enter)
+        widget.bind("<Leave>", self._on_leave)
+        for child in widget.winfo_children():
+            self._bind_click_recursive(child)
 
     # ── public API ────────────────────────────────
 
@@ -274,6 +297,7 @@ class CharacterCard(ctk.CTkFrame):
 
     def _render(self) -> None:
         cfg = _CARD_CONFIGS.get(self._grid_size, _CARD_CONFIGS[3])
+        avatar_size = cfg["avatar_size"]
 
         # Adapt frame dimensions
         self.configure(width=cfg["width"], height=cfg["height"])
@@ -283,15 +307,15 @@ class CharacterCard(ctk.CTkFrame):
         # avatar
         img = None
         if self._character:
-            img = load_avatar(self._character.avatar_path, cfg["avatar_size"])
+            img = load_avatar(self._character.avatar_path, avatar_size)
         if img is None:
-            img = create_placeholder(cfg["avatar_size"])
+            img = create_placeholder(avatar_size)
         self._lbl_avatar.configure(
-            image=img, width=cfg["avatar_size"], height=cfg["avatar_size"]
+            image=img, width=avatar_size, height=avatar_size
         )
         self._lbl_avatar._ref = img  # prevent garbage collection
 
-        # name / occupation
+        # name / occupation (always visible across both face-down and face-up!)
         if self._character:
             self._lbl_name.configure(
                 text=self._character.name,
@@ -307,7 +331,7 @@ class CharacterCard(ctk.CTkFrame):
             self._lbl_name.configure(text="Unknown")
             self._lbl_occ.configure(text="")
 
-        # verdict badge
+        # verdict badge (only shown when face-up!)
         if self._is_revealed and self._verdict is not None:
             if self._verdict == Verdict.CRIMINAL:
                 self._lbl_verdict.configure(
@@ -322,24 +346,17 @@ class CharacterCard(ctk.CTkFrame):
                     font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
                 )
             else:
-                self._lbl_verdict.configure(
-                    text="?",
-                    text_color=CLR_UNKNOWN,
-                    font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
-                )
+                self._lbl_verdict.configure(text="")
         else:
-            self._lbl_verdict.configure(
-                text="?",
-                text_color=CLR_UNKNOWN,
-                font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
-            )
+            # Face-down card: zero exposure of verdict or "?"
+            self._lbl_verdict.configure(text="")
 
         # clue (face-up only — never expose hidden clues)
         if self._is_revealed and self._clue is not None:
             self._lbl_clue.configure(
                 text=f'"{self._clue.display_text}"',
                 font=ctk.CTkFont(size=cfg["font_clue"]),
-                wraplength=cfg["width"] - 14,
+                wraplength=cfg["width"] - 12,
             )
         else:
             self._lbl_clue.configure(text="")
@@ -350,12 +367,20 @@ class CharacterCard(ctk.CTkFrame):
         if self._highlighted:
             color = getattr(self, "_custom_border_color", None) or BORDER_HINT
             self.configure(border_color=color, border_width=3, fg_color=BG_CARD_HOVER)
+            self._lbl_status_dot.configure(text="★", text_color=BORDER_HINT)
+            self._status_bar.configure(fg_color=color)
         elif self._is_revealed and self._verdict == Verdict.CRIMINAL:
             self.configure(border_color=BORDER_CRIMINAL, border_width=2, fg_color=BG_CRIMINAL)
+            self._lbl_status_dot.configure(text="●", text_color=CLR_CRIMINAL)
+            self._status_bar.configure(fg_color=BORDER_CRIMINAL)
         elif self._is_revealed and self._verdict == Verdict.INNOCENT:
             self.configure(border_color=BORDER_INNOCENT, border_width=2, fg_color=BG_INNOCENT)
+            self._lbl_status_dot.configure(text="●", text_color=CLR_INNOCENT)
+            self._status_bar.configure(fg_color=BORDER_INNOCENT)
         else:
             self.configure(border_color=BORDER_DEFAULT, border_width=2, fg_color=BG_CARD)
+            self._lbl_status_dot.configure(text="●", text_color="#5a524c")
+            self._status_bar.configure(fg_color=BORDER_DEFAULT)
 
     def _on_enter(self, _e) -> None:
         if not self._is_revealed and not self._highlighted:
@@ -509,45 +534,43 @@ class VerdictPopup(ctk.CTkToplevel):
 
 
 # ══════════════════════════════════════════════════════════
-#  HOW TO PLAY PANEL
+#  HOW TO PLAY PANEL  —  Frameless rules panel
 # ══════════════════════════════════════════════════════════
 
 class HowToPlayPanel(ctk.CTkFrame):
-    """Dedicated rules panel explaining game mechanics with elegant typography."""
+    """Dedicated rules panel rendered directly on the dark background with clean typography."""
 
     def __init__(self, master: ctk.CTkBaseClass, **kwargs) -> None:
-        super().__init__(master, corner_radius=14, fg_color=BG_CARD, **kwargs)
+        super().__init__(master, fg_color="transparent", **kwargs)
 
         ctk.CTkLabel(
-            self, text="📖 HOW TO PLAY",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            self, text="📖  HOW TO PLAY",
+            font=ctk.CTkFont(size=13, weight="bold"),
             text_color=TEXT_ACCENT,
-        ).pack(padx=16, pady=(14, 10), anchor="w")
+        ).pack(anchor="w", pady=(0, 6))
 
         rules = [
-            ("🎯 Goal", "Deduce every suspect's status as Criminal or Innocent."),
-            ("🃏 Verdict", "Click any face-down card to declare a verdict."),
-            ("📜 Clues", "Revealed clues are always true. Click face-up cards to highlight clue logic!"),
-            ("💡 Logic", "Use proven facts and region constraints to solve the grid."),
+            ("🎯", "Goal", "Deduce every suspect's status as Criminal or Innocent."),
+            ("🃏", "Verdict", "Click any face-down card to declare a verdict."),
+            ("📜", "Clues", "Revealed clues are true. Click face-up cards to highlight logic."),
+            ("💡", "Logic", "Use proven facts and region constraints to solve grid."),
         ]
 
-        for title, desc in rules:
-            item = ctk.CTkFrame(self, fg_color=BG_INPUT, corner_radius=10)
-            item.pack(padx=12, pady=5, fill="x")
+        for icon, title, desc in rules:
+            row = ctk.CTkFrame(self, fg_color="transparent")
+            row.pack(fill="x", pady=2)
 
             ctk.CTkLabel(
-                item, text=title,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color=TEXT_ACCENT, width=75, anchor="w",
-            ).pack(side="left", padx=(10, 6), pady=8)
+                row, text=f"{icon} {title}:",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                text_color=TEXT_PRIMARY, anchor="w", width=85,
+            ).pack(side="left", anchor="nw")
 
             ctk.CTkLabel(
-                item, text=desc,
+                row, text=desc,
                 font=ctk.CTkFont(size=11),
-                text_color=TEXT_PRIMARY, wraplength=220, justify="left",
-            ).pack(side="left", padx=(0, 8), pady=8, fill="x", expand=True)
-
-        ctk.CTkFrame(self, height=10, fg_color="transparent").pack()
+                text_color=TEXT_SECONDARY, wraplength=220, justify="left", anchor="w",
+            ).pack(side="left", fill="x", expand=True)
 
 
 # ══════════════════════════════════════════════════════════
@@ -567,16 +590,16 @@ class CompactActionToolbar(ctk.CTkFrame):
         on_load: Callable[[], None] | None = None,
         **kwargs,
     ) -> None:
-        super().__init__(master, corner_radius=12, fg_color=BG_CARD, height=44, **kwargs)
+        super().__init__(master, fg_color="transparent", height=36, **kwargs)
 
         container = ctk.CTkFrame(self, fg_color="transparent")
-        container.pack(padx=10, pady=5, expand=True)
+        container.pack(expand=True)
 
         buttons = [
             ("💡 Hint",       BTN_HINT,    BTN_HINT_H,    on_hint),
             ("⚡ Auto Solve", BTN_AUTO,    BTN_AUTO_H,    on_auto_solve),
             ("↻ Restart",    BTN_RESTART, BTN_RESTART_H, on_restart),
-            ("📂 Load Level", BTN_LOAD,    BTN_LOAD_H,    on_load),
+            ("📂 Load",       BTN_LOAD,    BTN_LOAD_H,    on_load),
         ]
 
         for text, fg, hover, cmd in buttons:
@@ -584,9 +607,9 @@ class CompactActionToolbar(ctk.CTkFrame):
                 container, text=text,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 fg_color=fg, hover_color=hover,
-                width=100, height=30, corner_radius=6,
+                width=90, height=32, corner_radius=8,
                 command=cmd,
-            ).pack(side="left", padx=4)
+            ).pack(side="left", padx=3)
 
 
 # ══════════════════════════════════════════════════════════
@@ -633,11 +656,11 @@ class ControlPanel(ctk.CTkFrame):
 
 
 # ══════════════════════════════════════════════════════════
-#  CLUE PANEL
+#  CLUE PANEL  —  Frameless scrollable clue list
 # ══════════════════════════════════════════════════════════
 
 class CluePanel(ctk.CTkFrame):
-    """Scrollable panel showing all currently revealed clues."""
+    """Scrollable panel showing revealed clues rendered directly on dark background."""
 
     def __init__(
         self,
@@ -645,47 +668,93 @@ class CluePanel(ctk.CTkFrame):
         on_clue_click: Callable[[Clue], None] | None = None,
         **kwargs,
     ) -> None:
-        super().__init__(master, corner_radius=14, fg_color=BG_CARD, **kwargs)
+        self._characters: dict = kwargs.pop("characters", {})
+        super().__init__(master, fg_color="transparent", **kwargs)
         self._on_clue_click = on_clue_click
+        self._active_clue_id: str | None = None
+
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(0, 6))
 
         ctk.CTkLabel(
-            self, text="REVEALED CLUES",
-            font=ctk.CTkFont(size=12, weight="bold"),
+            header_frame, text="🔍  REVEALED CLUES",
+            font=ctk.CTkFont(size=13, weight="bold"),
             text_color=TEXT_ACCENT,
-        ).pack(padx=14, pady=(14, 6))
+        ).pack(side="left")
+
+        self._lbl_count = ctk.CTkLabel(
+            header_frame, text="0",
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color=TEXT_PRIMARY,
+            fg_color="#3d3632",
+            corner_radius=8,
+            width=24, height=18,
+        )
+        self._lbl_count.pack(side="right")
 
         self._scroll = ctk.CTkScrollableFrame(
             self, fg_color="transparent",
             scrollbar_button_color=BORDER_DEFAULT,
             scrollbar_button_hover_color=TEXT_SECONDARY,
         )
-        self._scroll.pack(padx=8, pady=(0, 10), fill="both", expand=True)
+        self._scroll.pack(fill="both", expand=True)
 
-        self._rows: list[ctk.CTkFrame] = []
+        self._row_map: dict[str, ctk.CTkFrame] = {}
+
+    def set_active_clue(self, clue_id: str | None) -> None:
+        """Highlight active clue row in gold accent."""
+        self._active_clue_id = clue_id
+        for cid, row in self._row_map.items():
+            if cid == clue_id:
+                row.configure(fg_color="#3d3326", border_width=1, border_color="#f39c12")
+            else:
+                row.configure(fg_color="#272321", border_width=0)
 
     def update_clues(self, clues: tuple[Clue, ...]) -> None:
         """Replace all displayed clue rows."""
-        for r in self._rows:
+        for r in self._row_map.values():
             r.destroy()
-        self._rows.clear()
+        self._row_map.clear()
 
-        for clue in clues:
-            row = ctk.CTkFrame(self._scroll, fg_color=BG_INPUT, corner_radius=8, cursor="hand2")
-            row.pack(padx=4, pady=2, fill="x")
+        self._lbl_count.configure(text=str(len(clues)))
+
+        for idx, clue in enumerate(clues):
+            is_active = (clue.id == self._active_clue_id)
+            row = ctk.CTkFrame(
+                self._scroll,
+                fg_color="#3d3326" if is_active else ("#272321" if idx % 2 == 0 else "transparent"),
+                corner_radius=6,
+                border_width=1 if is_active else 0,
+                border_color="#f39c12" if is_active else "#272321",
+                cursor="hand2",
+            )
+            row.pack(padx=2, pady=2, fill="x")
+
+            owner_name = clue.owner_cell
+            if hasattr(self, "_characters") and self._characters:
+                char = self._characters.get(clue.owner_cell)
+                if char and hasattr(char, "name"):
+                    owner_name = char.name
 
             lbl_owner = ctk.CTkLabel(
-                row, text=f"[{clue.owner_cell}]",
-                font=ctk.CTkFont(size=10, weight="bold"),
-                text_color=TEXT_ACCENT, width=36,
+                row, text=f"[{owner_name}]",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                text_color=TEXT_ACCENT, width=75, anchor="w",
             )
-            lbl_owner.pack(side="left", padx=(8, 4), pady=6)
+            lbl_owner.pack(side="left", padx=(6, 4), pady=5)
+
+            formatted_text = clue.display_text
+            if hasattr(self, "_characters") and self._characters:
+                for cid, char in self._characters.items():
+                    if hasattr(char, "name"):
+                        formatted_text = formatted_text.replace(cid, char.name)
 
             lbl_text = ctk.CTkLabel(
-                row, text=clue.display_text,
-                font=ctk.CTkFont(size=10),
-                text_color=TEXT_PRIMARY, wraplength=200, justify="left",
+                row, text=formatted_text,
+                font=ctk.CTkFont(size=11),
+                text_color=TEXT_PRIMARY, wraplength=210, justify="left",
             )
-            lbl_text.pack(side="left", padx=(0, 8), pady=6, fill="x", expand=True)
+            lbl_text.pack(side="left", padx=(0, 6), pady=5, fill="x", expand=True)
 
             if self._on_clue_click:
                 handler = lambda _e, c=clue: self._on_clue_click(c)
@@ -693,15 +762,18 @@ class CluePanel(ctk.CTkFrame):
                 lbl_owner.bind("<Button-1>", handler)
                 lbl_text.bind("<Button-1>", handler)
 
-            self._rows.append(row)
+            self._row_map[clue.id] = row
+
+        if self._row_map:
+            self._scroll._parent_canvas.yview_moveto(1.0)
 
 
 # ══════════════════════════════════════════════════════════
-#  STATUS MESSAGE
+#  STATUS MESSAGE  —  Clean feedback banner
 # ══════════════════════════════════════════════════════════
 
 class StatusMessage(ctk.CTkFrame):
-    """Colour-coded banner for submission results and game feedback."""
+    """Colour-coded feedback banner for submission results and game feedback."""
 
     _COLOURS = {
         "success": CLR_SUCCESS,
@@ -712,24 +784,200 @@ class StatusMessage(ctk.CTkFrame):
 
     def __init__(self, master: ctk.CTkBaseClass, **kwargs) -> None:
         super().__init__(
-            master, corner_radius=14, fg_color=BG_CARD, **kwargs,
+            master, corner_radius=10, fg_color="#2a2522", border_width=1, border_color="#3a3430", height=44, **kwargs,
+        )
+        self.pack_propagate(False)
+
+        self._accent = ctk.CTkFrame(
+            self, fg_color=CLR_INFO, width=4, corner_radius=2,
+        )
+        self._accent.pack(side="left", fill="y", padx=0, pady=4)
+
+        content = ctk.CTkFrame(self, fg_color="transparent")
+        content.pack(side="left", fill="both", expand=True, padx=(10, 12), pady=4)
+
+        self._lbl = ctk.CTkLabel(
+            content, text="Click a suspect card to begin.",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=TEXT_SECONDARY, wraplength=550, justify="left", anchor="w",
+        )
+        self._lbl.pack(fill="x", expand=True, pady=4)
+
+    def set_message(self, text: str, level: str = "info") -> None:
+        color = self._COLOURS.get(level, TEXT_SECONDARY)
+        self._lbl.configure(text=text, text_color=color)
+        self._accent.configure(fg_color=color)
+
+
+# ══════════════════════════════════════════════════════════
+#  VICTORY POPUP MODAL
+# ══════════════════════════════════════════════════════════
+
+class VictoryPopup(ctk.CTkToplevel):
+    """Modal dialog displayed upon solving a puzzle level, showing elapsed time."""
+
+    def __init__(
+        self,
+        master: ctk.CTkBaseClass,
+        elapsed_seconds: int,
+        on_restart: Callable[[], None] | None = None,
+        on_next: Callable[[], None] | None = None,
+        on_back: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__(master)
+        self.title("Victory!")
+        self.geometry("420x330")
+        self.geometry("450x330")
+        self.resizable(False, False)
+        self.configure(fg_color="#1e1b18")
+        self.transient(master.winfo_toplevel())
+        self.grab_set()
+
+        # Center on parent window
+        self.update_idletasks()
+        master_win = master.winfo_toplevel()
+        x = master_win.winfo_x() + (master_win.winfo_width() // 2) - 225
+        y = master_win.winfo_y() + (master_win.winfo_height() // 2) - 165
+        self.geometry(f"+{x}+{y}")
+
+        pad = ctk.CTkFrame(self, fg_color="#272321", corner_radius=16, border_width=2, border_color="#d4a574")
+        pad.pack(fill="both", expand=True, padx=16, pady=16)
+
+        # Trophy Icon & Title
+        ctk.CTkLabel(
+            pad, text="🏆", font=ctk.CTkFont(size=44)
+        ).pack(pady=(16, 0))
+
+        ctk.CTkLabel(
+            pad, text="CASE SOLVED!",
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color="#d4a574",
+        ).pack(pady=(4, 2))
+
+        ctk.CTkLabel(
+            pad, text="Congratulations! You unmasked all suspects.",
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_SECONDARY,
+        ).pack(pady=(0, 14))
+
+        # Time Stat Card
+        minutes = elapsed_seconds // 60
+        seconds = elapsed_seconds % 60
+        time_str = f"{minutes:02d}:{seconds:02d}"
+
+        time_box = ctk.CTkFrame(pad, fg_color="#1e1b18", corner_radius=10, border_width=1, border_color="#3a3430")
+        time_box.pack(padx=24, pady=(0, 16), fill="x")
+
+        ctk.CTkLabel(
+            time_box, text="⏱  COMPLETION TIME",
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color=TEXT_SECONDARY,
+        ).pack(pady=(8, 2))
+
+        ctk.CTkLabel(
+            time_box, text=time_str,
+            font=ctk.CTkFont(family="Consolas", size=26, weight="bold"),
+            text_color="#2ecc71",
+        ).pack(pady=(0, 8))
+
+        # Action Buttons (Equal grid column weights)
+        btn_frame = ctk.CTkFrame(pad, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=12, pady=(0, 8))
+
+        col_count = 1 + (1 if on_back else 0) + (1 if on_next else 0)
+        for c in range(col_count):
+            btn_frame.grid_columnconfigure(c, weight=1)
+
+        col_idx = 0
+
+        if on_back:
+            ctk.CTkButton(
+                btn_frame, text="← Levels",
+                font=ctk.CTkFont(size=12),
+                fg_color="#3d3632", hover_color="#4a433e", text_color=TEXT_PRIMARY,
+                height=36, corner_radius=8,
+                command=lambda: [self.destroy(), on_back()],
+            ).grid(row=0, column=col_idx, sticky="ew", padx=3)
+            col_idx += 1
+
+        ctk.CTkButton(
+            btn_frame, text="↻ Replay",
+            font=ctk.CTkFont(size=12),
+            fg_color="#3d3632", hover_color="#4a433e", text_color=TEXT_PRIMARY,
+            height=36, corner_radius=8,
+            command=lambda: [self.destroy(), on_restart() if on_restart else None],
+        ).grid(row=0, column=col_idx, sticky="ew", padx=3)
+        col_idx += 1
+
+        if on_next:
+            ctk.CTkButton(
+                btn_frame, text="Next Level →",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                fg_color="#d4a574", hover_color="#bd8e5d", text_color="#221e1d",
+                height=36, corner_radius=8,
+                command=lambda: [self.destroy(), on_next()],
+            ).grid(row=0, column=col_idx, sticky="ew", padx=3)
+
+
+# ══════════════════════════════════════════════════════════
+#  NOT PROVABLE POPUP MODAL
+# ══════════════════════════════════════════════════════════
+
+class NotProvablePopup(ctk.CTkToplevel):
+    """Modal dialog displayed when a player submits a verdict without sufficient evidence."""
+
+    def __init__(
+        self,
+        master: ctk.CTkBaseClass,
+        character_name: str,
+        verdict: str,
+    ) -> None:
+        super().__init__(master)
+        self.title("Insufficient Evidence")
+        self.geometry("420x260")
+        self.resizable(False, False)
+        self.configure(fg_color="#1e1b18")
+        self.transient(master.winfo_toplevel())
+        self.grab_set()
+
+        # Center on parent window
+        self.update_idletasks()
+        master_win = master.winfo_toplevel()
+        x = master_win.winfo_x() + (master_win.winfo_width() // 2) - 210
+        y = master_win.winfo_y() + (master_win.winfo_height() // 2) - 130
+        self.geometry(f"+{x}+{y}")
+
+        pad = ctk.CTkFrame(self, fg_color="#272321", corner_radius=16, border_width=2, border_color="#f1c40f")
+        pad.pack(fill="both", expand=True, padx=16, pady=16)
+
+        # Warning Icon & Title
+        ctk.CTkLabel(
+            pad, text="⚠️", font=ctk.CTkFont(size=36)
+        ).pack(pady=(14, 0))
+
+        ctk.CTkLabel(
+            pad, text="INSUFFICIENT EVIDENCE!",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color="#f1c40f",
+        ).pack(pady=(4, 6))
+
+        msg = (
+            f"There is not enough evidence yet to prove that {character_name} is {verdict}.\n"
+            f"Keep exploring the grid for more clues!"
         )
 
         ctk.CTkLabel(
-            self, text="STATUS",
-            font=ctk.CTkFont(size=11, weight="bold"),
-            text_color=TEXT_ACCENT,
-        ).pack(padx=14, pady=(8, 2), anchor="w")
+            pad, text=msg,
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_PRIMARY, wraplength=350, justify="center",
+        ).pack(pady=(0, 16))
 
-        self._lbl = ctk.CTkLabel(
-            self, text="Click a suspect card to begin.",
-            font=ctk.CTkFont(size=11),
-            text_color=TEXT_SECONDARY, wraplength=450, justify="left",
-        )
-        self._lbl.pack(padx=14, pady=(0, 8), anchor="w", fill="x")
+        # Keep Looking Button
+        ctk.CTkButton(
+            pad, text="🔍 Keep Looking",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="#d4a574", hover_color="#bd8e5d", text_color="#221e1d",
+            height=38, corner_radius=8,
+            command=self.destroy,
+        ).pack(ipadx=16)
 
-    def set_message(self, text: str, level: str = "info") -> None:
-        self._lbl.configure(
-            text=text,
-            text_color=self._COLOURS.get(level, TEXT_SECONDARY),
-        )
