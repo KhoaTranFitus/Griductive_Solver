@@ -63,3 +63,38 @@ def test_fact_rejects_non_final_verdicts(tmp_path, status):
 
     with pytest.raises(LevelValidationError, match="invalid status"):
         validate_level(level)
+
+def test_duplicate_clue_id(tmp_path):
+    source_path = "data/levels/level_01.json"
+    with open(source_path, "r", encoding="utf-8") as source:
+        raw_level = json.load(source)
+
+    # Duplicate the first clue's ID
+    raw_level["clues"][1]["id"] = raw_level["clues"][0]["id"]
+    
+    invalid_path = tmp_path / "dup_clue_level.json"
+    invalid_path.write_text(json.dumps(raw_level), encoding="utf-8")
+
+    from core.exceptions import LevelLoadError
+    with pytest.raises(LevelLoadError, match="Duplicate clue ID"):
+        load_level(invalid_path)
+
+@pytest.mark.parametrize("field,bad_val", [
+    ("cells", {}),
+    ("clues", {}),
+    ("solution", []),
+    ("initial_revealed", {}),
+])
+def test_invalid_types(tmp_path, field, bad_val):
+    source_path = "data/levels/level_01.json"
+    with open(source_path, "r", encoding="utf-8") as source:
+        raw_level = json.load(source)
+
+    raw_level[field] = bad_val
+    
+    invalid_path = tmp_path / "bad_type_level.json"
+    invalid_path.write_text(json.dumps(raw_level), encoding="utf-8")
+
+    from core.exceptions import LevelLoadError
+    with pytest.raises(LevelLoadError, match=f"'{field}' must be a"):
+        load_level(invalid_path)

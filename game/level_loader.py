@@ -33,7 +33,7 @@ def _read_json(file_path: str | Path) -> dict[str, Any]:
 
     return data
 
-def _parse_cell(raw_cell: dict[str, Any]) -> Cell:
+def _parse_cell(raw_cell: dict[str, Any], file_path: str | Path) -> Cell:
     try:
         return Cell(
             id=str(raw_cell["id"]),
@@ -44,11 +44,11 @@ def _parse_cell(raw_cell: dict[str, Any]) -> Cell:
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LevelLoadError(
-            f"Invalid cell data: {raw_cell}"
+            f"Invalid cell data in {file_path}: {exc} - {raw_cell}"
         ) from exc
 
 
-def _parse_clue(raw_clue: dict[str, Any]) -> Clue:
+def _parse_clue(raw_clue: dict[str, Any], file_path: str | Path) -> Clue:
     try:
         return Clue(
             id=str(raw_clue["id"]),
@@ -59,12 +59,13 @@ def _parse_clue(raw_clue: dict[str, Any]) -> Clue:
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LevelLoadError(
-            f"Invalid clue data: {raw_clue}"
+            f"Invalid clue data in {file_path}: {exc} - {raw_clue}"
         ) from exc
 
 
 def _parse_solution(
     raw_solution: dict[str, Any],
+    file_path: str | Path,
 ) -> dict[str, Verdict]:
     solution: dict[str, Verdict] = {}
 
@@ -73,7 +74,7 @@ def _parse_solution(
             solution[str(cell_id)] = Verdict(verdict_value)
     except (AttributeError, ValueError) as exc:
         raise LevelLoadError(
-            "Invalid solution format."
+            f"Invalid solution format in {file_path}: {exc}"
         ) from exc
 
     return solution
@@ -82,18 +83,31 @@ def load_level(file_path: str | Path) -> Level:
     raw = _read_json(file_path)
 
     try:
+        if not isinstance(raw.get("cells"), list):
+            raise LevelLoadError(f"'cells' must be a list in {file_path}")
+        if not isinstance(raw.get("clues"), list):
+            raise LevelLoadError(f"'clues' must be a list in {file_path}")
+        if not isinstance(raw.get("solution"), dict):
+            raise LevelLoadError(f"'solution' must be a dict in {file_path}")
+        if not isinstance(raw.get("initial_revealed"), list):
+            raise LevelLoadError(f"'initial_revealed' must be a list in {file_path}")
+
         cells = tuple(sorted(
             (
-                _parse_cell(raw_cell)
+                _parse_cell(raw_cell, file_path)
                 for raw_cell in raw["cells"]
             ),
             key=lambda cell: (cell.row, cell.column),
         ))
 
-        clue_list = [
-            _parse_clue(raw_clue)
-            for raw_clue in raw["clues"]
-        ]
+        clue_list = []
+        clue_ids = set()
+        for raw_clue in raw["clues"]:
+            clue = _parse_clue(raw_clue, file_path)
+            if clue.id in clue_ids:
+                raise LevelLoadError(f"Duplicate clue ID in {file_path}: {clue.id}")
+            clue_ids.add(clue.id)
+            clue_list.append(clue)
 
         clues = {
             clue.id: clue
@@ -105,7 +119,7 @@ def load_level(file_path: str | Path) -> Level:
             for cell_id in raw["initial_revealed"]
         )
 
-        hidden_solution = _parse_solution(raw["solution"])
+        hidden_solution = _parse_solution(raw["solution"], file_path)
 
         return Level(
             id=str(raw["id"]),
@@ -119,9 +133,9 @@ def load_level(file_path: str | Path) -> Level:
 
     except KeyError as exc:
         raise LevelLoadError(
-            f"Missing required level field: {exc.args[0]}"
+            f"Missing required level field in {file_path}: {exc.args[0]}"
         ) from exc
     except (TypeError, ValueError) as exc:
         raise LevelLoadError(
-            f"Invalid level data: {exc}"
+            f"Invalid level data in {file_path}: {exc}"
         ) from exc
