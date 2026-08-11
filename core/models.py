@@ -7,6 +7,7 @@ from typing import Any
 from core.enums import (
     CardState,
     ClueType,
+    DeductionStatus,
     RegionType,
     SubmissionResult,
     Verdict,
@@ -91,6 +92,42 @@ class SolverStatistics:
     propagations: int = 0
     backtracks: int = 0
     runtime_ms: float = 0.0
+
+
+@dataclass(frozen=True)
+class SATQueryTrace:
+    """Compact outcome of one SAT call made for an entailment check."""
+
+    assumptions: tuple[int, ...]
+    satisfiable: bool
+    statistics: SolverStatistics
+
+
+@dataclass(frozen=True)
+class DeductionStep:
+    """One forced verdict accepted by the game engine."""
+
+    step_number: int
+    active_clue_ids: tuple[str, ...]
+    target_cell: str
+    sat_queries: tuple[SATQueryTrace, ...]
+    verdict: Verdict
+    newly_revealed_clue_id: str
+    solver_statistics: SolverStatistics
+
+
+@dataclass(frozen=True)
+class DeductionRunResult:
+    """Terminal status and completed steps from a deduction loop."""
+
+    status: DeductionStatus
+    trace: tuple[DeductionStep, ...]
+
+    @property
+    def steps(self) -> tuple[DeductionStep, ...]:
+        """Alias for callers that treat the trace as a step sequence."""
+        return self.trace
+
 
 @dataclass(frozen=True)
 class SubmissionResponse:

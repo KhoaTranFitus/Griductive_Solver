@@ -9,7 +9,11 @@ from core.enums import Verdict
 from core.models import AgentMove, PublicState
 from logic.cnf_encoder import build_knowledge_base
 from logic.dpll import DPLLSolver
-from logic.entailment import classify_character
+from logic.entailment import (
+    EntailmentDetails,
+    classify_character,
+    classify_character_with_details,
+)
 from logic.variable_map import VariableMap
 
 
@@ -80,6 +84,35 @@ class DeductiveAgent:
             classifications[cell_id] = verdict
 
         return classifications
+
+    def explain_move(
+        self,
+        public_state: PublicState,
+        move: AgentMove,
+    ) -> EntailmentDetails:
+        """Return compact SAT evidence for a proposed public-state move.
+
+        This parallel detail API leaves the established ``AgentMove`` and
+        ``choose_next_move`` contracts unchanged. It rebuilds the same public
+        knowledge base and never reads a level or hidden clue collection.
+        """
+        if move.cell_id not in public_state.unresolved_cells:
+            raise ValueError("The explained move must target an unresolved cell.")
+        if move.verdict not in {Verdict.CRIMINAL, Verdict.INNOCENT}:
+            raise ValueError("The explained move must contain a final verdict.")
+
+        variable_map = VariableMap(public_state.cells)
+        knowledge_base = build_knowledge_base(
+            public_state.revealed_clues,
+            public_state.proved_verdicts,
+            public_state.cells,
+            variable_map,
+        )
+        return classify_character_with_details(
+            knowledge_base,
+            variable_map.get_variable(move.cell_id),
+            self._solver,
+        )
 
     def choose_next_move(
         self,
