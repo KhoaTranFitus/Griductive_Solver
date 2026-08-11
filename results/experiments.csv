@@ -1,0 +1,7 @@
+level_id,size,primary_variables,auxiliary_variables,clauses,sat_calls,decisions,propagations,backtracks,deduction_steps,solver_runtime_ms,wall_runtime_ms,uniqueness,status
+level_01,3,9,0,23,225,0,897,0,8,27.070800,28.698600,UNIQUE,SOLVED
+level_02,3,9,0,25,228,0,909,0,8,29.886200,31.407200,UNIQUE,SOLVED
+level_03,4,16,0,40,741,0,4752,0,15,219.362400,226.794000,UNIQUE,SOLVED
+level_04,4,16,0,40,744,0,4707,0,15,230.810600,238.575300,UNIQUE,SOLVED
+level_05,5,25,0,64,1833,0,17313,0,24,1211.978600,1234.725200,UNIQUE,SOLVED
+level_06,5,25,0,64,1830,0,17343,0,24,1144.941700,1166.084800,UNIQUE,SOLVED
