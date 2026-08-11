@@ -1,2 +1,0 @@
-level_id,size,primary_variables,auxiliary_variables,clauses,sat_calls,decisions,propagations,backtracks,deduction_steps,solver_runtime_ms,wall_runtime_ms,uniqueness,status
-broken_level,3,0,0,0,0,0,0,0,0,0.000000,0.000000,ERROR,ERROR

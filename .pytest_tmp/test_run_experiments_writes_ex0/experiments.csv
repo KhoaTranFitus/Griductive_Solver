@@ -1,2 +1,0 @@
-level_id,size,primary_variables,auxiliary_variables,clauses,sat_calls,decisions,propagations,backtracks,deduction_steps,solver_runtime_ms,wall_runtime_ms,uniqueness,status
-level_01,3,9,0,23,225,0,897,0,8,26.349700,28.042800,UNIQUE,SOLVED
