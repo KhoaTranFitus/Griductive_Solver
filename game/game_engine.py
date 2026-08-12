@@ -1,6 +1,14 @@
 # game/game_engine.py
-from core.enums import SubmissionResult, Verdict
-from core.models import AgentMove, Level, PublicState, SubmissionResponse
+from core.enums import DeductionStatus, SubmissionResult, Verdict
+from core.models import (
+    AgentMove,
+    DeductionRunResult,
+    DeductionStep,
+    Level,
+    PublicState,
+    SolverStatistics,
+    SubmissionResponse,
+)
 from game.game_state import GameState
 from game.public_state import build_public_state
 from logic.deductive_agent import DeductiveAgent
@@ -126,6 +134,86 @@ class GameEngine:
         if move is None:
             return None
         return self.submit_verdict(move.cell_id, move.verdict)
+
+    def run_deduction_loop(self) -> DeductionRunResult:
+        """Apply forced public deductions until reaching a terminal state.
+
+        Completed trace steps are recorded only after ``submit_verdict`` has
+        accepted a move and a new public clue is observable. A run-level
+        ``STUCK`` status represents a consistent state whose unresolved cells
+        are all unknown; no guess is submitted in that case.
+        """
+        trace: list[DeductionStep] = []
+
+        while True:
+            public_state = self.get_public_state()
+            if self.is_solved():
+                return DeductionRunResult(
+                    status=DeductionStatus.SOLVED,
+                    trace=tuple(trace),
+                )
+
+            move = self.get_hint()
+            if move is None:
+                classifications = self._agent.classify_all(public_state)
+                status = (
+                    DeductionStatus.INCONSISTENT
+                    if any(
+                        verdict is Verdict.INCONSISTENT
+                        for verdict in classifications.values()
+                    )
+                    else DeductionStatus.STUCK
+                )
+                return DeductionRunResult(
+                    status=status,
+                    trace=tuple(trace),
+                )
+
+            sat_queries = ()
+            solver_statistics = SolverStatistics()
+            explain_move = getattr(self._agent, "explain_move", None)
+            if callable(explain_move):
+                explanation = explain_move(public_state, move)
+                sat_queries = explanation.sat_queries
+                solver_statistics = explanation.solver_statistics
+
+            response = self.submit_verdict(move.cell_id, move.verdict)
+            if response.result is SubmissionResult.INCONSISTENT:
+                return DeductionRunResult(
+                    status=DeductionStatus.INCONSISTENT,
+                    trace=tuple(trace),
+                )
+            if response.result is not SubmissionResult.ACCEPTED:
+                return DeductionRunResult(
+                    status=DeductionStatus.STUCK,
+                    trace=tuple(trace),
+                )
+
+            updated_public_state = self.get_public_state()
+            active_clue_ids = tuple(
+                clue.id for clue in public_state.revealed_clues
+            )
+            active_clue_id_set = set(active_clue_ids)
+            newly_revealed_clue_ids = tuple(
+                clue.id
+                for clue in updated_public_state.revealed_clues
+                if clue.id not in active_clue_id_set
+            )
+            if len(newly_revealed_clue_ids) != 1:
+                raise RuntimeError(
+                    "An accepted unresolved verdict must reveal exactly one "
+                    "new public clue."
+                )
+
+            trace.append(DeductionStep(
+                step_number=len(trace) + 1,
+                active_clue_ids=active_clue_ids,
+                target_cell=move.cell_id,
+                sat_queries=sat_queries,
+                verdict=move.verdict,
+                newly_revealed_clue_id=newly_revealed_clue_ids[0],
+                solver_statistics=solver_statistics,
+            ))
 
     def restart(self) -> None:
         self._state = self._create_initial_state()

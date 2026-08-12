@@ -32,6 +32,14 @@ class SubmissionResult(str, Enum):
     INCONSISTENT = "INCONSISTENT"
 
 
+class DeductionStatus(str, Enum):
+    """Terminal outcome of a public-knowledge deduction run."""
+
+    SOLVED = "SOLVED"
+    STUCK = "STUCK"
+    INCONSISTENT = "INCONSISTENT"
+
+
 class ClueType(str, Enum):
     """
     Các loại clue (manh mối) được hỗ trợ trong trò chơi.
