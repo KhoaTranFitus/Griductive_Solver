@@ -3,6 +3,7 @@ from core.enums import ClueType, CountOperator, Parity, Verdict
 from core.exceptions import LevelValidationError, RegionResolutionError
 from core.models import Clue, Level
 from logic.region_resolver import parse_region, resolve_region
+from logic.semantic_evaluator import evaluate_clue
 
 def _ensure_unique(
     values: list[str],
@@ -106,6 +107,12 @@ def _validate_clue(
                     f"Clue {clue.id} requires integer k."
                 )
 
+            if not 0 <= k <= len(resolved_ids):
+                raise LevelValidationError(
+                    f"Clue {clue.id} has invalid k={k}; "
+                    f"region size is {len(resolved_ids)}."
+                )
+
     elif clue.type in {ClueType.EQUAL_COUNT, ClueType.COMPARE_COUNT}:
         status = clue.data.get("status", Verdict.CRIMINAL.value)
         if status not in {Verdict.CRIMINAL.value, Verdict.INNOCENT.value}:
@@ -139,11 +146,17 @@ def _validate_clue(
         except RegionResolutionError as exc:
             raise LevelValidationError(f"Invalid region in clue {clue.id}: {exc}") from exc
 
-            if not 0 <= k <= len(resolved_ids):
-                raise LevelValidationError(
-                    f"Clue {clue.id} has invalid k={k}; "
-                    f"region size is {len(resolved_ids)}."
-                )
+    # Evaluate clue against hidden solution
+    assignment = {
+        cid: (verdict == Verdict.CRIMINAL)
+        for cid, verdict in level.hidden_solution.items()
+    }
+    try:
+        is_true = evaluate_clue(clue, assignment, level.cells)
+    except Exception as exc:
+        raise LevelValidationError(f"Failed to evaluate clue {clue.id}: {exc}") from exc
+    if not is_true:
+        raise LevelValidationError(f"Clue {clue.id} contradicts the hidden solution.")
 
 def validate_level(level: Level) -> None:
     if level.size not in {3, 4, 5}:
@@ -191,13 +204,27 @@ def validate_level(level: Level) -> None:
             "Cells do not cover every board position exactly once."
         )
 
+    if len(level.clues) != len(level.cells):
+        raise LevelValidationError(
+            f"Expected {len(level.cells)} clues, "
+            f"found {len(level.clues)}."
+        )
+
     for cell in level.cells:
         if cell.clue_id not in level.clues:
             raise LevelValidationError(
                 f"Cell {cell.id} references "
                 f"missing clue {cell.clue_id}."
             )
+        clue = level.clues[cell.clue_id]
+        if clue.owner_cell != cell.id:
+            raise LevelValidationError(
+                f"Cell {cell.id} references clue {clue.id} "
+                f"which is owned by {clue.owner_cell}."
+            )
 
+    owner_cells = [clue.owner_cell for clue in level.clues.values()]
+    _ensure_unique(owner_cells, "owner cells")
     solution_ids = set(level.hidden_solution.keys())
     expected_ids = set(cell_ids)
 
