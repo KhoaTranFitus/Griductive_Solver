@@ -158,12 +158,12 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
             frame,
             text="S E L E C T   L E V E L",
             text_color="#ffffff",
-            font=ctk.CTkFont(family="Consolas", size=32, weight="bold"),
-        ).pack(pady=(16, 24))
+            font=ctk.CTkFont(family="Consolas", size=42, weight="bold"),
+        ).pack(pady=(16, 0))
 
         # Grid Sections Container
         sections = ctk.CTkFrame(frame, fg_color="transparent")
-        sections.pack(fill="both", expand=True, padx=45, pady=(0, 40))
+        sections.place(relx=0.5, rely=0.57, anchor="center")
 
         section_colors = {
             3: "#4f7a9c",  # Cyan accent
@@ -177,11 +177,11 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
             section = ctk.CTkFrame(
                 sections,
                 fg_color="#11131a",
-                corner_radius=14,
+                corner_radius=20,
                 border_width=1,
-                border_color="#232736",
+                border_color="#282f42",
             )
-            section.grid(row=0, column=column, sticky="nsew", padx=12)
+            section.grid(row=0, column=column, sticky="nsew", padx=20, pady=0)
 
             accent_color = section_colors.get(size, "#4f7a9c")
 
@@ -190,8 +190,8 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
                 section,
                 text=f"{size} × {size}  GRID",
                 text_color=accent_color,
-                font=ctk.CTkFont(family="Consolas", size=22, weight="bold"),
-            ).pack(pady=(28, 20))
+                font=ctk.CTkFont(family="Consolas", size=28, weight="bold"),
+            ).pack(pady=(32, 24), padx=44)
 
             matching = [i for i, level_size in enumerate(level_sizes) if level_size == size]
             for index in matching:
@@ -199,17 +199,17 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
                 ctk.CTkButton(
                     section,
                     text=f"LEVEL {level_number:02d}",
-                    width=210,
-                    height=46,
+                    width=260,
+                    height=58,
                     fg_color="#161924",
                     hover_color="#222838",
                     text_color="#ffffff",
                     border_width=1,
                     border_color="#2c3345",
                     corner_radius=6,
-                    font=ctk.CTkFont(family="Consolas", size=14, weight="bold"),
+                    font=ctk.CTkFont(family="Consolas", size=17, weight="bold"),
                     command=lambda i=index: show_game(i),
-                ).pack(pady=9)
+                ).pack(pady=14, padx=32)
 
         display(frame)
 
