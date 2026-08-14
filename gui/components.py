@@ -407,6 +407,13 @@ class VerdictPopup(ctk.CTkToplevel):
     bordered verdict buttons plus a Cancel option.
     """
 
+    # CustomTkinter's Windows title-bar recolouring temporarily withdraws the
+    # window and schedules focus restoration on the currently focused child.
+    # A verdict can destroy this short-lived popup before that callback runs,
+    # leaving the callback to focus a button label that no longer exists.
+    # This popup has no title-bar content, so skip that redraw cycle entirely.
+    _deactivate_windows_window_header_manipulation = True
+
     def __init__(
         self,
         master: ctk.CTkBaseClass,

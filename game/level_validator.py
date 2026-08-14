@@ -26,7 +26,13 @@ def _validate_clue(
             f"{clue.owner_cell}"
         )
 
-    if clue.type == ClueType.FACT:
+    if clue.type == ClueType.NONE:
+        if clue.data:
+            raise LevelValidationError(
+                f"NONE clue {clue.id} must have empty data."
+            )
+
+    elif clue.type == ClueType.FACT:
         person = clue.data.get("person")
         status = clue.data.get("status")
 
@@ -118,9 +124,8 @@ def _validate_clue(
         if status not in {Verdict.CRIMINAL.value, Verdict.INNOCENT.value}:
             raise LevelValidationError(f"Clue {clue.id} has invalid counting status: {status}")
         raw_regions = (
-            (clue.data.get("region1"), clue.data.get("region2"))
-            if clue.type is ClueType.EQUAL_COUNT
-            else (clue.data.get("left_region"), clue.data.get("right_region"))
+            clue.data.get("region1", clue.data.get("left_region")),
+            clue.data.get("region2", clue.data.get("right_region")),
         )
         try:
             for raw_region in raw_regions:
@@ -132,7 +137,8 @@ def _validate_clue(
                 CountOperator(clue.data.get("operator"))
             except ValueError as exc:
                 raise LevelValidationError(
-                    f"Clue {clue.id} requires operator GT or LT."
+                    f"Clue {clue.id} requires operator GT or LT "
+                    "(GREATER_THAN or LESS_THAN are also accepted)."
                 ) from exc
 
     elif clue.type is ClueType.CONNECTED:
@@ -145,6 +151,34 @@ def _validate_clue(
             resolve_region(parse_region(clue.data.get("region")), level.cells)
         except RegionResolutionError as exc:
             raise LevelValidationError(f"Invalid region in clue {clue.id}: {exc}") from exc
+
+    elif clue.type is ClueType.COUNT_PROPERTY:
+        try:
+            subjects = resolve_region(
+                parse_region(clue.data.get("subject_region")), level.cells
+            )
+        except RegionResolutionError as exc:
+            raise LevelValidationError(
+                f"Invalid subject region in clue {clue.id}: {exc}"
+            ) from exc
+        subject_count = clue.data.get("subject_count")
+        if not isinstance(subject_count, int) or not 0 <= subject_count <= len(subjects):
+            raise LevelValidationError(
+                f"Clue {clue.id} has invalid subject_count: {subject_count}"
+            )
+        prop = clue.data.get("property")
+        if not isinstance(prop, dict) or prop.get("type") != "NEIGHBOR_COUNT":
+            raise LevelValidationError(
+                f"Clue {clue.id} requires a NEIGHBOR_COUNT property."
+            )
+        if prop.get("status") not in {Verdict.CRIMINAL.value, Verdict.INNOCENT.value}:
+            raise LevelValidationError(
+                f"Clue {clue.id} has invalid property status."
+            )
+        if not isinstance(prop.get("count"), int) or prop["count"] < 0:
+            raise LevelValidationError(
+                f"Clue {clue.id} requires a non-negative neighbor count."
+            )
 
     # Evaluate clue against hidden solution
     assignment = {

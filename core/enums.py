@@ -52,6 +52,7 @@ class ClueType(str, Enum):
     - PARITY: (Extension) Ràng buộc chẵn/lẻ số Criminal.
     """
 
+    NONE = "NONE"
     FACT = "FACT"
     SAME = "SAME"
     DIFFERENT = "DIFFERENT"
@@ -66,6 +67,7 @@ class ClueType(str, Enum):
     EQUAL_COUNT = "EQUAL_COUNT"
 
     CONNECTED = "CONNECTED"
+    COUNT_PROPERTY = "COUNT_PROPERTY"
 
 
 class CountOperator(str, Enum):
@@ -73,6 +75,8 @@ class CountOperator(str, Enum):
 
     GT = "GT"
     LT = "LT"
+    GREATER_THAN = "GREATER_THAN"
+    LESS_THAN = "LESS_THAN"
 
 
 class Parity(str, Enum):
@@ -98,6 +102,10 @@ class RegionType(str, Enum):
 
     # Extension region
     INTERSECTION = "INTERSECTION"
+    EDGES = "EDGES"
+    LEFT_OF = "LEFT_OF"
+    BELOW = "BELOW"
+    UNION = "UNION"
 
 
 class CardState(str, Enum):

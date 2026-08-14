@@ -10,6 +10,7 @@ interface (``get_public_state``, ``submit_verdict``, ``restart``, ``is_solved``,
 from __future__ import annotations
 
 import tkinter.filedialog as filedialog
+import threading
 from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -42,6 +43,7 @@ class GameScreen(ctk.CTkFrame):
         master: ctk.CTkBaseClass,
         engine: "GameEngine",
         characters: Mapping[str, Character],
+        display_level_number: int | None = None,
         on_level_loaded: "callable | None" = None,
         on_back: "callable | None" = None,
         on_previous: "callable | None" = None,
@@ -52,6 +54,7 @@ class GameScreen(ctk.CTkFrame):
 
         self._engine = engine
         self._characters = dict(characters)
+        self._display_level_number = display_level_number
         self._on_level_loaded = on_level_loaded
         self._on_back = on_back
         self._on_previous = on_previous
@@ -60,6 +63,9 @@ class GameScreen(ctk.CTkFrame):
         self._highlighted_cell: str | None = None
         self._cards: dict[str, CharacterCard] = {}
         self._auto_solving: bool = False
+        self._auto_worker_running: bool = False
+        self._auto_worker_result = None
+        self._auto_worker_error: Exception | None = None
 
         # Timer & Victory tracking
         self._elapsed_seconds: int = 0
@@ -258,7 +264,11 @@ class GameScreen(ctk.CTkFrame):
         pad_val = 5 if size == 3 else (3 if size == 4 else 2)
 
         # Update header & sidebar info
-        level_text = public_state.level_id.upper().replace("_", " ")
+        level_text = (
+            f"LEVEL {self._display_level_number}"
+            if self._display_level_number is not None
+            else public_state.level_id.upper().replace("_", " ")
+        )
         board_text = f"Board: {size}×{size}"
         self._lbl_level_badge.configure(text=level_text)
         self._lbl_side_level.configure(text=f"{level_text}  ·  {board_text}")
@@ -421,16 +431,20 @@ class GameScreen(ctk.CTkFrame):
 
         elif ctype in (ClueType.EQUAL_COUNT, ClueType.COMPARE_COUNT):
             raw_regions = (
-                (cdata.get("region1"), cdata.get("region2"))
-                if ctype == ClueType.EQUAL_COUNT
-                else (cdata.get("left_region"), cdata.get("right_region"))
+                cdata.get("region1", cdata.get("left_region")),
+                cdata.get("region2", cdata.get("right_region")),
             )
-            for raw_region in raw_regions:
+            region_colors = ("#3498db", "#e67e22")
+            for raw_region, color in zip(raw_regions, region_colors):
                 if not isinstance(raw_region, dict):
                     continue
                 try:
                     for cid in resolve_region(parse_region(raw_region), public_state.cells):
-                        highlights.setdefault(cid, "#f1c40f")
+                        # A cell shared by both regions is shown in purple.
+                        if cid in highlights and cid != clue.owner_cell:
+                            highlights[cid] = "#9b59b6"
+                        else:
+                            highlights.setdefault(cid, color)
                 except Exception:
                     pass
 
@@ -440,6 +454,28 @@ class GameScreen(ctk.CTkFrame):
                 try:
                     for cid in resolve_region(parse_region(raw_region), public_state.cells):
                         highlights.setdefault(cid, "#9b59b6")
+                except Exception:
+                    pass
+
+        elif ctype == ClueType.COUNT_PROPERTY:
+            raw_region = cdata.get("subject_region")
+            if isinstance(raw_region, dict):
+                try:
+                    subject_ids = resolve_region(parse_region(raw_region), public_state.cells)
+                    for cid in subject_ids:
+                        highlights.setdefault(cid, "#9b59b6")
+
+                    prop = cdata.get("property", {})
+                    if prop.get("type") == "NEIGHBOR_COUNT":
+                        for subject_id in subject_ids:
+                            neighbor_region = {
+                                "type": "NEIGHBORS",
+                                "center": subject_id,
+                            }
+                            for cid in resolve_region(
+                                parse_region(neighbor_region), public_state.cells
+                            ):
+                                highlights.setdefault(cid, "#f1c40f")
                 except Exception:
                     pass
 
@@ -652,12 +688,44 @@ class GameScreen(ctk.CTkFrame):
                 self._status.set_message("🎉 Auto-solve complete! Case solved!", "success")
             return
 
-        try:
-            response = self._engine.auto_solve_step()
-        except Exception as exc:
-            self._auto_solving = False
-            self._status.set_message(f"❌ Auto-solve error: {exc}", "error")
+        if self._auto_worker_running:
             return
+
+        # SAT search can take seconds on larger boards. Keep it off Tk's event
+        # thread so painting, dragging and the timer remain responsive.
+        self._auto_worker_running = True
+        self._auto_worker_result = None
+        self._auto_worker_error = None
+
+        def find_move() -> None:
+            try:
+                self._auto_worker_result = self._engine.get_hint()
+            except Exception as exc:
+                self._auto_worker_error = exc
+            finally:
+                self._auto_worker_running = False
+
+        threading.Thread(target=find_move, daemon=True).start()
+        self.after(40, self._poll_auto_solve_result)
+
+    def _poll_auto_solve_result(self) -> None:
+        """Consume a background SAT result from Tk's event thread."""
+        if self._auto_worker_running:
+            if self.winfo_exists():
+                self.after(40, self._poll_auto_solve_result)
+            return
+
+        if not self.winfo_exists() or not self._auto_solving:
+            return
+        if self._auto_worker_error is not None:
+            self._auto_solving = False
+            self._status.set_message(
+                f"❌ Auto-solve error: {self._auto_worker_error}", "error"
+            )
+            return
+
+        move = self._auto_worker_result
+        response = self._engine.auto_solve_step(move) if move is not None else None
 
         if response is None:
             self._auto_solving = False

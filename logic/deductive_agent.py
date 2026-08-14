@@ -85,6 +85,28 @@ class DeductiveAgent:
 
         return classifications
 
+    def classify_one(
+        self,
+        public_state: PublicState,
+        cell_id: str,
+    ) -> Verdict:
+        """Classify one unresolved cell without solving unrelated queries."""
+        if cell_id not in public_state.unresolved_cells:
+            raise ValueError("The classified cell must be unresolved.")
+
+        variable_map = VariableMap(public_state.cells)
+        knowledge_base = build_knowledge_base(
+            public_state.revealed_clues,
+            public_state.proved_verdicts,
+            public_state.cells,
+            variable_map,
+        )
+        return classify_character(
+            knowledge_base,
+            variable_map.get_variable(cell_id),
+            self._solver,
+        )
+
     def explain_move(
         self,
         public_state: PublicState,
@@ -124,10 +146,25 @@ class DeductiveAgent:
         UNKNOWN, or the knowledge base is inconsistent. Never return a move
         whose verdict is UNKNOWN or INCONSISTENT.
         """
-        classifications = self.classify_all(public_state)
+        unresolved_cells = self._row_major_unresolved_cells(public_state)
+        if not unresolved_cells:
+            return None
 
-        for cell_id in self._row_major_unresolved_cells(public_state):
-            verdict = classifications[cell_id]
+        variable_map = VariableMap(public_state.cells)
+        knowledge_base = build_knowledge_base(
+            public_state.revealed_clues,
+            public_state.proved_verdicts,
+            public_state.cells,
+            variable_map,
+        )
+        for cell_id in unresolved_cells:
+            verdict = classify_character(
+                knowledge_base,
+                variable_map.get_variable(cell_id),
+                self._solver,
+            )
+            if verdict is Verdict.INCONSISTENT:
+                return None
             if verdict in {Verdict.CRIMINAL, Verdict.INNOCENT}:
                 return AgentMove(cell_id=cell_id, verdict=verdict)
 

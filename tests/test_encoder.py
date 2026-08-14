@@ -3,10 +3,13 @@ import pytest
 
 from game.level_loader import load_level
 from core.enums import ClueType, Verdict
+from core.exceptions import UnsupportedClueError
 from core.models import Cell, Clue
 from logic.semantic_evaluator import evaluate_clue
 from logic.variable_map import VariableMap
 from logic.cnf_encoder import (
+    MAX_TRUTH_CONSTRAINT_VARIABLES,
+    _encode_truth_constraint,
     encode_clue, build_knowledge_base, encode_known_verdict
 )
 
@@ -17,6 +20,22 @@ def _solution_to_bool_assignment(level):
         for cell_id, verdict
         in level.hidden_solution.items()
     }
+
+
+def test_none_clue_is_semantically_true_and_adds_no_cnf():
+    level = load_level("data/levels/level_01.json")
+    clue = Clue(
+        id="none",
+        owner_cell=level.cells[0].id,
+        type=ClueType.NONE,
+        data={},
+        display_text="Narrative only.",
+    )
+    assignment = _solution_to_bool_assignment(level)
+    variable_map = VariableMap(level.cells)
+
+    assert evaluate_clue(clue, assignment, level.cells) is True
+    assert encode_clue(clue, level.cells, variable_map) == []
 
 
 def test_all_clues_are_true_for_hidden_solution():
@@ -211,3 +230,19 @@ def test_invalid_clue_data_raises_exception():
     clue_bad_k = Clue(id="3", owner_cell="A1", type=ClueType.AT_MOST, data={"k": -1, "region": {"type": "EXPLICIT", "cells": ["A1"]}}, display_text="")
     with pytest.raises(ValueError):
         encode_clue(clue_bad_k, cells, vmap)
+
+
+def test_truth_table_encoder_rejects_exponential_region_before_enumeration():
+    count = MAX_TRUTH_CONSTRAINT_VARIABLES + 1
+    cells = tuple(
+        Cell(f"X{index}", 1, index, f"char_{index}", f"clue_{index}")
+        for index in range(1, count + 1)
+    )
+    cell_ids = [cell.id for cell in cells]
+
+    with pytest.raises(UnsupportedClueError, match="Truth-table CNF constraint"):
+        _encode_truth_constraint(
+            cell_ids,
+            VariableMap(cells),
+            lambda assignment: True,
+        )

@@ -1,5 +1,11 @@
 # Griductive Data Format
 
+> Performance constraint: clue types implemented through the generic
+> truth-table CNF encoder may involve at most 14 distinct cells. The production
+> catalog currently uses at most 10. Larger regions require a dedicated
+> polynomial-size encoder; CNF building otherwise raises
+> `UnsupportedClueError` before exponential enumeration begins.
+
 Tài liệu này là hợp đồng dữ liệu chung giữa Level Loader, Validator, CNF
 Encoder, Deductive Agent, Game Engine và GUI.
 
