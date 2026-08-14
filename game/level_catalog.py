@@ -20,7 +20,7 @@ LEVEL_LAYOUT = (
 def build_level_catalog(
     levels_directory: str | Path = "data/levels",
 ) -> list[Level]:
-    """Load and validate Level 1 through Level 6 in navigation order."""
+    """Load and validate the completed levels exposed by the level selector."""
     directory = Path(levels_directory)
     levels: list[Level] = []
 

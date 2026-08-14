@@ -36,11 +36,34 @@ def _connected(clue, assignment, cells) -> bool:
         reached = expanded
 
 
+def _count_property(clue, assignment, cells) -> bool:
+    subjects = resolve_region(parse_region(clue.data["subject_region"]), cells)
+    required_subjects = clue.data["subject_count"]
+    prop = clue.data["property"]
+    if prop.get("type") != "NEIGHBOR_COUNT":
+        raise UnsupportedClueError(f"Unsupported count property: {prop.get('type')}")
+    status = Verdict(prop.get("status", Verdict.CRIMINAL.value))
+    required_neighbors = prop["count"]
+    matching = 0
+    for subject in subjects:
+        neighbors = resolve_region(
+            parse_region({"type": "NEIGHBORS", "center": subject}), cells
+        )
+        count = sum(
+            assignment[cell_id] is (status is Verdict.CRIMINAL)
+            for cell_id in neighbors
+        )
+        matching += count == required_neighbors
+    return matching == required_subjects
+
+
 def evaluate_clue(clue: Clue, assignment: dict[str, bool], cells: tuple[Cell, ...]) -> bool:
     missing = {cell.id for cell in cells} - assignment.keys()
     if missing:
         raise ValueError(f"Semantic evaluation requires a complete assignment. Missing: {sorted(missing)}")
 
+    if clue.type is ClueType.NONE:
+        return True
     if clue.type is ClueType.FACT:
         expected = Verdict(clue.data["status"])
         return assignment[clue.data["person"]] is (expected is Verdict.CRIMINAL)
@@ -67,9 +90,12 @@ def evaluate_clue(clue: Clue, assignment: dict[str, bool], cells: tuple[Cell, ..
         right = _count(right_raw, status, assignment, cells)
         if clue.type is ClueType.EQUAL_COUNT:
             return left == right
-        return left > right if clue.data["operator"] == "GT" else left < right
+        return left > right if clue.data["operator"] in {"GT", "GREATER_THAN"} else left < right
 
     if clue.type is ClueType.CONNECTED:
         return _connected(clue, assignment, cells)
+
+    if clue.type is ClueType.COUNT_PROPERTY:
+        return _count_property(clue, assignment, cells)
 
     raise UnsupportedClueError(f"Unsupported clue type: {clue.type}")

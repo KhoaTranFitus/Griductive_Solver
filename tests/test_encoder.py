@@ -19,6 +19,16 @@ def _solution_to_bool_assignment(level):
     }
 
 
+def test_none_clue_is_semantically_true_and_adds_no_cnf():
+    level = load_level("data/levels/level_01.json")
+    clue = next(clue for clue in level.clues.values() if clue.type is ClueType.NONE)
+    assignment = _solution_to_bool_assignment(level)
+    variable_map = VariableMap(level.cells)
+
+    assert evaluate_clue(clue, assignment, level.cells) is True
+    assert encode_clue(clue, level.cells, variable_map) == []
+
+
 def test_all_clues_are_true_for_hidden_solution():
     level = load_level("data/levels/level_01.json")
     assignment = _solution_to_bool_assignment(level)

@@ -144,7 +144,8 @@ def encode_count_relation(clue: Clue, cells: tuple[Cell, ...], variable_map: Var
         left_count, right_count = count(left, assignment), count(right, assignment)
         if clue.type is ClueType.EQUAL_COUNT:
             return left_count == right_count
-        return left_count > right_count if clue.data["operator"] == "GT" else left_count < right_count
+        operator = clue.data["operator"]
+        return left_count > right_count if operator in {"GT", "GREATER_THAN"} else left_count < right_count
 
     return _encode_truth_constraint(involved, variable_map, predicate)
 
@@ -178,11 +179,48 @@ def encode_connected(clue: Clue, cells: tuple[Cell, ...], variable_map: Variable
     return _encode_truth_constraint(cell_ids, variable_map, predicate)
 
 
+def encode_count_property(
+    clue: Clue, cells: tuple[Cell, ...], variable_map: VariableMap,
+) -> list[list[int]]:
+    subjects = resolve_region(parse_region(clue.data["subject_region"]), cells)
+    prop = clue.data["property"]
+    if prop.get("type") != "NEIGHBOR_COUNT":
+        raise UnsupportedClueError(f"Unsupported count property: {prop.get('type')}")
+    status = Verdict(prop.get("status", Verdict.CRIMINAL.value))
+    required_neighbors = prop["count"]
+    required_subjects = clue.data["subject_count"]
+    neighbor_map = {
+        subject: resolve_region(
+            parse_region({"type": "NEIGHBORS", "center": subject}), cells
+        )
+        for subject in subjects
+    }
+    involved = subjects + [
+        neighbor for neighbors in neighbor_map.values() for neighbor in neighbors
+    ]
+
+    def predicate(assignment: dict[str, bool]) -> bool:
+        matching = 0
+        for subject in subjects:
+            count = sum(
+                assignment[cell_id] is (status is Verdict.CRIMINAL)
+                for cell_id in neighbor_map[subject]
+            )
+            matching += count == required_neighbors
+        return matching == required_subjects
+
+    return _encode_truth_constraint(involved, variable_map, predicate)
+
+
 def encode_clue(
     clue: Clue,
     cells: tuple[Cell, ...],
     variable_map: VariableMap,
 ) -> list[list[int]]:
+    if clue.type == ClueType.NONE:
+        # Narrative-only testimony has no logical effect on the knowledge base.
+        return []
+
     if clue.type == ClueType.FACT:
         return encode_fact(clue, variable_map)
         
@@ -214,6 +252,9 @@ def encode_clue(
 
     if clue.type == ClueType.CONNECTED:
         return encode_connected(clue, cells, variable_map)
+
+    if clue.type == ClueType.COUNT_PROPERTY:
+        return encode_count_property(clue, cells, variable_map)
             
     raise UnsupportedClueError(f"Unsupported clue type: {clue.type}")
 

@@ -29,13 +29,12 @@ def test_catalog_rejects_a_file_with_the_wrong_size(tmp_path):
             json.dumps(data), encoding="utf-8"
         )
 
-    with pytest.raises(ValueError, match="level_03.json must be 4x4"):
+    with pytest.raises(ValueError, match="level_04.json must be 4x4"):
         build_level_catalog(tmp_path)
 
 
-def test_hard_levels_are_fact_free_and_fully_deductive():
-    for level in build_level_catalog()[2:]:
-        assert all(clue.type is not ClueType.FACT for clue in level.clues.values())
+def test_all_catalog_levels_have_true_clues_and_are_fully_deductive():
+    for level in build_level_catalog():
         assignment = {
             cell_id: verdict.value == "CRIMINAL"
             for cell_id, verdict in level.hidden_solution.items()

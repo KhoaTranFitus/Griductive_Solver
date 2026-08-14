@@ -102,6 +102,54 @@ def _resolve_explicit(
 
     return result
 
+def _resolve_edges(cells: tuple[Cell, ...]) -> list[str]:
+    """Return cells on the outer border of the board."""
+    max_row = max(cell.row for cell in cells)
+    max_column = max(cell.column for cell in cells)
+    return [
+        cell.id for cell in _sort_cells([
+            cell for cell in cells
+            if cell.row in {1, max_row} or cell.column in {1, max_column}
+        ])
+    ]
+
+def _resolve_left_of(person: str, cells: tuple[Cell, ...]) -> list[str]:
+    """Return same-row cells strictly left of the referenced person."""
+    target = next((cell for cell in cells if cell.id == person), None)
+    if target is None:
+        raise RegionResolutionError(f"Unknown target cell: {person}")
+    return [
+        cell.id for cell in _sort_cells([
+            cell for cell in cells
+            if cell.row == target.row and cell.column < target.column
+        ])
+    ]
+
+def _resolve_below(target_id: str, cells: tuple[Cell, ...]) -> list[str]:
+    target = next((cell for cell in cells if cell.id == target_id), None)
+    if target is None:
+        raise RegionResolutionError(f"Unknown target cell: {target_id}")
+    return [
+        cell.id for cell in _sort_cells([
+            cell for cell in cells
+            if cell.column == target.column and cell.row > target.row
+        ])
+    ]
+
+def _resolve_composite(
+    raw_regions: list[dict], cells: tuple[Cell, ...], *, intersection: bool,
+) -> list[str]:
+    if len(raw_regions) < 2:
+        name = "INTERSECTION" if intersection else "UNION"
+        raise RegionResolutionError(f"{name} requires at least two regions.")
+    resolved = [
+        set(resolve_region(parse_region(raw_region), cells))
+        for raw_region in raw_regions
+    ]
+    result = set.intersection(*resolved) if intersection else set.union(*resolved)
+    positions = {cell.id: (cell.row, cell.column) for cell in cells}
+    return sorted(result, key=positions.__getitem__)
+
 def _resolve_intersection(
     raw_regions: list[dict],
     cells: tuple[Cell, ...],
@@ -167,14 +215,45 @@ def resolve_region(
         result = _resolve_column(index, cells)
 
     elif region.type == RegionType.NEIGHBORS:
-        target_cell = region.parameters.get("cell")
+        target_cell = region.parameters.get(
+            "center",
+            region.parameters.get("person", region.parameters.get("cell")),
+        )
 
         if not isinstance(target_cell, str):
             raise RegionResolutionError(
-                "NEIGHBORS region requires string 'cell'."
+                "NEIGHBORS region requires string 'center', 'person', or 'cell'."
             )
 
         result = _resolve_neighbors(target_cell, cells)
+
+    elif region.type == RegionType.EDGES:
+        result = _resolve_edges(cells)
+
+    elif region.type == RegionType.LEFT_OF:
+        target_cell = region.parameters.get(
+            "target",
+            region.parameters.get(
+                "person",
+                region.parameters.get("center", region.parameters.get("cell")),
+            ),
+        )
+        if not isinstance(target_cell, str):
+            raise RegionResolutionError(
+                "LEFT_OF region requires string 'target', 'person', "
+                "'center', or 'cell'."
+            )
+        result = _resolve_left_of(target_cell, cells)
+
+    elif region.type == RegionType.BELOW:
+        target_cell = region.parameters.get(
+            "target", region.parameters.get("person", region.parameters.get("cell"))
+        )
+        if not isinstance(target_cell, str):
+            raise RegionResolutionError(
+                "BELOW region requires string 'target', 'person', or 'cell'."
+            )
+        result = _resolve_below(target_cell, cells)
 
     elif region.type == RegionType.EXPLICIT:
         requested_ids = region.parameters.get("cells")
@@ -195,6 +274,12 @@ def resolve_region(
             )
 
         result = _resolve_intersection(raw_regions, cells)
+
+    elif region.type == RegionType.UNION:
+        raw_regions = region.parameters.get("regions")
+        if not isinstance(raw_regions, list):
+            raise RegionResolutionError("UNION requires list 'regions'.")
+        result = _resolve_composite(raw_regions, cells, intersection=False)
 
     else:
         raise RegionResolutionError(

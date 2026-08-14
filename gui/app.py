@@ -1,6 +1,7 @@
 """Application window and navigation between menu, selector, and game."""
 
 from collections.abc import Mapping
+from tkinter import messagebox
 
 import customtkinter as ctk
 
@@ -70,11 +71,12 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
                      font=ctk.CTkFont(size=34, weight="bold")).pack(pady=(4, 24))
         sections = ctk.CTkFrame(frame, fg_color="transparent")
         sections.pack(fill="both", expand=True, padx=45, pady=(0, 40))
-        for column, size in enumerate((3, 4, 5)):
+        difficulty_groups = (("EASY", 3), ("MEDIUM", 4), ("HARD", 5))
+        for column, (difficulty, size) in enumerate(difficulty_groups):
             sections.grid_columnconfigure(column, weight=1)
             section = ctk.CTkFrame(sections, fg_color="#2d2926", corner_radius=14)
             section.grid(row=0, column=column, sticky="nsew", padx=10)
-            ctk.CTkLabel(section, text=f"{size} × {size}", text_color="#d4a574",
+            ctk.CTkLabel(section, text=f"{difficulty} ({size} × {size})", text_color="#d4a574",
                          font=ctk.CTkFont(size=26, weight="bold")).pack(pady=(28, 22))
             matching = [i for i, level_size in enumerate(level_sizes) if level_size == size]
             for index in matching:
@@ -83,13 +85,32 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
                               fg_color="#3d3632", hover_color="#d4a574",
                               font=ctk.CTkFont(size=15, weight="bold"),
                               command=lambda i=index: show_game(i)).pack(pady=9)
+            if size == 5:
+                completed_numbers = {index + 1 for index in matching}
+                for level_number in sorted({5, 6} - completed_numbers):
+                    ctk.CTkButton(
+                        section,
+                        text=f"LEVEL {level_number}",
+                        width=190,
+                        height=48,
+                        fg_color="#d4a574",
+                        hover_color="#bd8e5d",
+                        text_color="#221e1d",
+                        font=ctk.CTkFont(size=15, weight="bold"),
+                        command=lambda number=level_number: messagebox.showinfo(
+                            f"Level {number}",
+                            f"Level {number} (5 × 5) is still in development.",
+                            parent=root,
+                        ),
+                    ).pack(pady=9)
         display(frame)
 
     def show_game(index: int) -> None:
         selected_engine = GameEngine(levels[index])
-        root.title(f"Griductive - {selected_engine.get_level_id()}")
+        root.title(f"Griductive - Level {index + 1}")
         screen = GameScreen(
             root, engine=selected_engine, characters=characters,
+            display_level_number=index + 1,
             on_back=show_level_select,
             on_previous=(lambda: show_game(index - 1)) if index > 0 else None,
             on_next=(lambda: show_game(index + 1)) if index < len(level_sizes) - 1 else None,
