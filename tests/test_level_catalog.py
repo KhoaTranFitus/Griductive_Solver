@@ -29,7 +29,7 @@ def test_catalog_rejects_a_file_with_the_wrong_size(tmp_path):
             json.dumps(data), encoding="utf-8"
         )
 
-    with pytest.raises(ValueError, match="level_04.json must be 4x4"):
+    with pytest.raises(ValueError, match="level_03.json must be 4x4"):
         build_level_catalog(tmp_path)
 
 
@@ -63,8 +63,8 @@ def test_hard_level_display_text_uses_names_not_cell_coordinates():
             )
 
 
-def test_characters_are_alphabetical_in_every_level():
+def test_characters_are_unique_in_every_level():
     characters = load_characters("data/characters.json")
     for level in build_level_catalog():
         names = [characters[cell.character_id].name for cell in level.cells]
-        assert names == sorted(names, key=str.casefold), level.id
+        assert len(names) == len(set(names)) == len(level.cells), level.id

@@ -9,6 +9,12 @@ from logic.region_resolver import parse_region, resolve_region
 from logic.variable_map import VariableMap
 
 
+# Truth-table encodings are exponential. The authored levels need at most ten
+# distinct variables for these generic constraints; this ceiling prevents a
+# malformed or future level from allocating millions of clauses unexpectedly.
+MAX_TRUTH_CONSTRAINT_VARIABLES = 14
+
+
 def encode_fact(clue: Clue, variable_map: VariableMap) -> list[list[int]]:
     person = clue.data["person"]
     status = Verdict(clue.data["status"])
@@ -102,6 +108,13 @@ def _encode_truth_constraint(
 ) -> list[list[int]]:
     """Encode a small finite constraint by excluding every invalid assignment."""
     unique_ids = list(dict.fromkeys(cell_ids))
+    if len(unique_ids) > MAX_TRUTH_CONSTRAINT_VARIABLES:
+        raise UnsupportedClueError(
+            "Truth-table CNF constraint uses "
+            f"{len(unique_ids)} variables; maximum supported is "
+            f"{MAX_TRUTH_CONSTRAINT_VARIABLES}. Use a smaller region or a "
+            "dedicated polynomial-size encoder."
+        )
     clauses: list[list[int]] = []
     for values in itertools.product((False, True), repeat=len(unique_ids)):
         assignment = dict(zip(unique_ids, values))

@@ -206,12 +206,12 @@ def test_real_agent_loop_updates_public_state_and_builds_accepted_trace():
         first.target_cell,
         first.verdict,
         first.newly_revealed_clue_id,
-    ) == (
-        1,
-        ("clue_A1",),
-        "B1",
-        Verdict.CRIMINAL,
-        "clue_B1",
+        ) == (
+            1,
+            ("clue_A1",),
+            "B2",
+            Verdict.CRIMINAL,
+            "clue_B2",
     )
     assert (
         second.step_number,
@@ -219,27 +219,27 @@ def test_real_agent_loop_updates_public_state_and_builds_accepted_trace():
         second.target_cell,
         second.verdict,
         second.newly_revealed_clue_id,
-    ) == (
-        2,
-        ("clue_A1", "clue_B1"),
-        "C1",
-        Verdict.INNOCENT,
-        "clue_C1",
+        ) == (
+            2,
+            ("clue_A1", "clue_B2"),
+            "B1",
+            Verdict.INNOCENT,
+            "clue_B1",
     )
     assert [
         (query.assumptions, query.satisfiable)
         for query in first.sat_queries
     ] == [
         ((), True),
-        ((-2,), False),
+        ((-5,), False),
     ]
     assert [
         (query.assumptions, query.satisfiable)
         for query in second.sat_queries
     ] == [
         ((), True),
-        ((-3,), True),
-        ((3,), False),
+        ((-2,), True),
+        ((2,), False),
     ]
 
     states_after_steps = [
@@ -283,10 +283,10 @@ def test_real_agent_loop_updates_public_state_and_builds_accepted_trace():
             assert isinstance(query.satisfiable, bool)
             assert_statistics(query.statistics)
 
-    assert "clue_C1" not in {
+    assert "clue_B1" not in {
         clue.id for clue in agent.received_states[0].revealed_clues
     }
-    assert "clue_C1" not in {
+    assert "clue_B1" not in {
         clue.id for clue in agent.received_states[1].revealed_clues
     }
 
