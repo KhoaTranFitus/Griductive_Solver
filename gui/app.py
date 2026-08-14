@@ -1,7 +1,6 @@
 """Application window and navigation between menu, selector, and game."""
 
 from collections.abc import Mapping
-from tkinter import messagebox
 
 import customtkinter as ctk
 
@@ -135,26 +134,26 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
         root.title("Griductive - Select Level")
         frame = ctk.CTkFrame(root, fg_color="#0a0b0e")
 
-        # Top Bar
+        # Top Bar (Back Button)
         top_bar = ctk.CTkFrame(frame, fg_color="transparent")
         top_bar.pack(fill="x", padx=36, pady=(24, 0))
 
         ctk.CTkButton(
             top_bar,
             text="←  BACK TO MENU",
-            width=160,
-            height=36,
+            width=170,
+            height=38,
             fg_color="#0d0f14",
             hover_color="#161a24",
             text_color="#9aa2b6",
             border_width=1,
             border_color="#252936",
-            corner_radius=4,
-            font=ctk.CTkFont(family="Consolas", size=11, weight="bold"),
+            corner_radius=6,
+            font=ctk.CTkFont(family="Consolas", size=12, weight="bold"),
             command=show_main_menu,
         ).pack(side="left")
 
-        # Header Title
+        # Header Title (kept at top location)
         ctk.CTkLabel(
             frame,
             text="S E L E C T   L E V E L",
@@ -162,41 +161,56 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
             font=ctk.CTkFont(family="Consolas", size=42, weight="bold"),
         ).pack(pady=(16, 0))
 
-        # Grid Sections Container
+        # 3 Level Selection Holders (placed in vertical middle, significantly enlarged)
         sections = ctk.CTkFrame(frame, fg_color="transparent")
-        sections.pack(fill="both", expand=True, padx=45, pady=(0, 40))
-        difficulty_groups = (("EASY", 3), ("MEDIUM", 4), ("HARD", 5))
-        for column, (difficulty, size) in enumerate(difficulty_groups):
+        sections.place(relx=0.5, rely=0.57, anchor="center")
+
+        section_colors = {
+            3: "#4f7a9c",  # Cyan accent
+            4: "#7c5ea8",  # Purple accent
+            5: "#a85e78",  # Rose accent
+        }
+
+        for column, size in enumerate((3, 4, 5)):
             sections.grid_columnconfigure(column, weight=1)
-            section = ctk.CTkFrame(sections, fg_color="#2d2926", corner_radius=14)
-            section.grid(row=0, column=column, sticky="nsew", padx=10)
-            ctk.CTkLabel(section, text=f"{difficulty} ({size} × {size})", text_color="#d4a574",
-                         font=ctk.CTkFont(size=26, weight="bold")).pack(pady=(28, 22))
+
+            section = ctk.CTkFrame(
+                sections,
+                fg_color="#11131a",
+                corner_radius=20,
+                border_width=1,
+                border_color="#282f42",
+            )
+            section.grid(row=0, column=column, sticky="nsew", padx=20, pady=0)
+
+            accent_color = section_colors.get(size, "#4f7a9c")
+
+            # Grid Mode Title
+            ctk.CTkLabel(
+                section,
+                text=f"{size} × {size}  GRID",
+                text_color=accent_color,
+                font=ctk.CTkFont(family="Consolas", size=28, weight="bold"),
+            ).pack(pady=(32, 24), padx=44)
+
             matching = [i for i, level_size in enumerate(level_sizes) if level_size == size]
             for index in matching:
                 level_number = index + 1
-                ctk.CTkButton(section, text=f"LEVEL {level_number}", width=190, height=48,
-                              fg_color="#3d3632", hover_color="#d4a574",
-                              font=ctk.CTkFont(size=15, weight="bold"),
-                              command=lambda i=index: show_game(i)).pack(pady=9)
-            if size == 5:
-                completed_numbers = {index + 1 for index in matching}
-                for level_number in sorted({5, 6} - completed_numbers):
-                    ctk.CTkButton(
-                        section,
-                        text=f"LEVEL {level_number}",
-                        width=190,
-                        height=48,
-                        fg_color="#d4a574",
-                        hover_color="#bd8e5d",
-                        text_color="#221e1d",
-                        font=ctk.CTkFont(size=15, weight="bold"),
-                        command=lambda number=level_number: messagebox.showinfo(
-                            f"Level {number}",
-                            f"Level {number} (5 × 5) is still in development.",
-                            parent=root,
-                        ),
-                    ).pack(pady=9)
+                ctk.CTkButton(
+                    section,
+                    text=f"LEVEL {level_number:02d}",
+                    width=260,
+                    height=58,
+                    fg_color="#161924",
+                    hover_color="#222838",
+                    text_color="#ffffff",
+                    border_width=1,
+                    border_color="#2c3345",
+                    corner_radius=8,
+                    font=ctk.CTkFont(family="Consolas", size=17, weight="bold"),
+                    command=lambda i=index: show_game(i),
+                ).pack(pady=14, padx=32)
+
         display(frame)
 
     # ══════════════════════════════════════════════════════════
@@ -274,10 +288,9 @@ def run_app(engine: GameEngine, characters: Mapping[str, Character]) -> None:
 
     def show_game(index: int) -> None:
         selected_engine = GameEngine(levels[index])
-        root.title(f"Griductive - Level {index + 1}")
+        root.title(f"Griductive - {selected_engine.get_level_id()}")
         screen = GameScreen(
             root, engine=selected_engine, characters=characters,
-            display_level_number=index + 1,
             on_back=show_level_select,
             on_previous=(lambda: show_game(index - 1)) if index > 0 else None,
             on_next=(lambda: show_game(index + 1)) if index < len(level_sizes) - 1 else None,

@@ -1,0 +1,86 @@
+| Nhóm                          | Clue trong ảnh                                                    | Clue type nên dùng                      |
+| ----------------------------- | ----------------------------------------------------------------- | --------------------------------------- |
+| Số lượng chính xác            | “There are exactly 2 innocents to the left of Karl.”              | `EXACTLY`                               |
+| Số lượng chính xác            | “Exactly 2 of the 4 innocents in column A are Mason's neighbors.” | `EXACTLY` + `INTERSECTION`              |
+| Thành viên thuộc nhóm         | “Cole is one of Bella's 3 criminal neighbors.”                    | `MEMBER_OF_COUNT` hoặc `EXACTLY + FACT` |
+| Connectivity                  | “Both criminals in row 1 are connected.”                          | `CONNECTED`                             |
+| Connectivity                  | “Both criminals in row 2 are connected.”                          | `CONNECTED`                             |
+| Intersection/count            | “Only 1 of the 3 innocents neighboring Ivy is Eliza's neighbor.”  | `EXACTLY + INTERSECTION`                |
+| Equal count                   | “Seth and Mason have an equal number of criminal neighbors.”      | `EQUAL_COUNT`                           |
+| Compare count                 | “There are more criminals in column D than column A.”             | `COMPARE_COUNT`                         |
+| Total count trên nhiều region | “There are a total of 8 innocents in columns A and B.”            | `EXACTLY` trên `UNION`                  |
+| Parity                        | “There's an odd number of innocents on the edges.”                | `PARITY`                                |
+| Equal count                   | “James and Finn have an equal number of innocent neighbors.”      | `EQUAL_COUNT`                           |
+| Count property                | “Only one person in row 2 has exactly 6 innocent neighbors.”      | `COUNT_PROPERTY` / nested count         |
+| Flavour text                  | “My alibi is a latte...”                                          | `NONE`                                  |
+| Flavour text                  | “I take mine black...”                                            | `NONE`                                  |
+| Flavour text                  | “Cold brew takes twelve hours...”                                 | `NONE`                                  |
+| Flavour text                  | “It wasn't me...”                                                 | `NONE`                                  |
+| Flavour text                  | “I spill coffee...”                                               | `NONE`                                  |
+| Flavour text                  | “I've had three cups...”                                          | `NONE`                                  |
+| Flavour text                  | “I only grind beans...”                                           | `NONE`                                  |
+| Flavour text                  | “I can't be interrogated...”                                      | `NONE`                                  |
+
+| Bước | Ô      | Clue                                                          | Nhóm logic                    | `ClueType` nên dùng        |
+| ---- | ------ | ------------------------------------------------------------- | ----------------------------- | -------------------------- |
+| 1    | **B5** | Only 1 of the 4 criminals neighboring Nola is in column B     | Cardinality + Intersection    | `EXACTLY` + `INTERSECTION` |
+| 2    | **B3** | Exactly 2 of the 5 innocents neighboring Gwen are in column C | Cardinality + Intersection    | `EXACTLY` + `INTERSECTION` |
+| 3    | **C1** | Gwen and I have 2 innocent neighbors in common                | Common neighbors              | `EXACTLY` + `INTERSECTION` |
+| 3    | **C3** | My best move tonight was staying in.                          | Không có logic                | `NONE`                     |
+| 4    | **D3** | Ian is one of Fern's 3 criminal neighbors                     | Membership + Cardinality      | `EXACTLY` + `FACT`         |
+| 5    | **A3** | Cara has exactly 3 innocent neighbors                         | Cardinality                   | `EXACTLY`                  |
+| 6    | **C2** | None of the 4 criminals on the edges is Bella's neighbor      | Cardinality + Intersection    | `EXACTLY` + `INTERSECTION` |
+| 7    | **A1** | Ian has exactly 2 innocent neighbors                          | Cardinality                   | `EXACTLY`                  |
+| 8    | **A2** | I never bluff. Except at cards. Legally.                      | Không có logic                | `NONE`                     |
+| 9    | **B1** | All innocents in column D are connected                       | Connectivity                  | `CONNECTED`                |
+| 10   | **D4** | Each row has at least 2 innocents                             | Cardinality trên nhiều region | `AT_LEAST` × mỗi row       |
+| 11   | **D2** | House rules: no crimes on game night.                         | Không có logic                | `NONE`                     |
+| 12   | **D1** | I play by the rules. All of them. Always.                     | Không có logic                | `NONE`                     |
+| 13   | **B2** | There's an equal number of criminals in rows 4 and 3          | So sánh bằng nhau             | `EQUAL_COUNT`              |
+| 14   | **C4** | There's an odd number of innocents neighboring Mason          | Parity                        | `PARITY`                   |
+| 15   | **D5** | Both criminals in row 4 are connected                         | Cardinality + Connectivity    | `CONNECTED` + `EXACTLY`    |
+| 16   | **B4** | Nobody flips tables on my watch.                              | Không có logic                | `NONE`                     |
+| 16   | **A4** | I was mid-campaign. You don't pause a campaign.               | Không có logic                | `NONE`                     |
+| 17   | **A5** | Checkmate takes patience. So does innocence.                  | Không có logic                | `NONE`                     |
+| 18   | **C5** | I always pass GO and collect nothing.                         | Không có logic                | `NONE`                     |
+
+
+ class ClueType(str, Enum):
+    NONE = "NONE"
+
+    FACT = "FACT"
+
+    SAME = "SAME"
+    DIFFERENT = "DIFFERENT"
+
+    EXACTLY = "EXACTLY"
+    AT_LEAST = "AT_LEAST"
+    AT_MOST = "AT_MOST"
+
+    EQUAL_COUNT = "EQUAL_COUNT"
+    COMPARE_COUNT = "COMPARE_COUNT"
+
+    PARITY = "PARITY"
+    CONNECTED = "CONNECTED"
+
+    COUNT_PROPERTY = "COUNT_PROPERTY"
+
+
+
+class RegionType(str, Enum):
+    ROW = "ROW"
+    COLUMN = "COLUMN"
+
+    NEIGHBORS = "NEIGHBORS"
+
+    EDGES = "EDGES"
+
+    LEFT_OF = "LEFT_OF"
+    RIGHT_OF = "RIGHT_OF"
+    ABOVE = "ABOVE"
+    BELOW = "BELOW"
+
+    EXPLICIT = "EXPLICIT"
+
+    INTERSECTION = "INTERSECTION"
+    UNION = "UNION"

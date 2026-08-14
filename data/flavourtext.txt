@@ -1,0 +1,17 @@
+| #  | Flavour text                                      |
+| -- | ------------------------------------------------- |
+| 1  | **I was making coffee. That's all I know.**       |
+| 2  | **I take mine without sugar. Always have.**       |
+| 3  | **The machine was broken when I got here.**       |
+| 4  | **I haven't left my seat all morning.**           |
+| 5  | **Ask someone else. I was cleaning my mug.**      |
+| 6  | **I heard something, but I didn't see anything.** |
+| 7  | **Espresso first. Questions later.**              |
+| 8  | **I don't remember who came in after me.**        |
+| 9  | **Someone took my usual cup again.**              |
+| 10 | **I was waiting for the kettle to boil.**         |
+| 11 | **The coffee tasted strange today.**              |
+| 12 | **I came here for caffeine, not trouble.**        |
+| 13 | **I was looking for a clean spoon.**              |
+| 14 | **I don't even drink coffee this late.**          |
+| 15 | **Whatever happened, I was nowhere near it.**     |

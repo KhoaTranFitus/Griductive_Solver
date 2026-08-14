@@ -1,8 +1,8 @@
 {
     "id": "level_05",
-    "title": "Crossed Testimonies",
+    "title": "The Recursive Alibi",
     "size": 5,
-    "difficulty": 8.0,
+    "difficulty": 9.2,
     "cells": [
         {
             "id": "A1",
@@ -438,23 +438,32 @@
         {
             "id": "clue_A4",
             "owner_cell": "A4",
-            "type": "NONE",
-            "data": {},
-            "display_text": "I was waiting for the kettle to boil."
+            "type": "DIFFERENT",
+            "data": {
+                "person1": "A4",
+                "person2": "A5"
+            },
+            "display_text": "Quinn and Uma have different statuses."
         },
         {
             "id": "clue_B4",
             "owner_cell": "B4",
-            "type": "NONE",
-            "data": {},
-            "display_text": "I heard something, but I didn't see anything."
+            "type": "SAME",
+            "data": {
+                "person1": "B4",
+                "person2": "C4"
+            },
+            "display_text": "Ray and Rosa have the same status."
         },
         {
             "id": "clue_C4",
             "owner_cell": "C4",
-            "type": "NONE",
-            "data": {},
-            "display_text": "The coffee tasted strange today."
+            "type": "DIFFERENT",
+            "data": {
+                "person1": "C4",
+                "person2": "D4"
+            },
+            "display_text": "Rosa and Sarah have different statuses."
         },
         {
             "id": "clue_D4",
@@ -482,9 +491,12 @@
         {
             "id": "clue_A5",
             "owner_cell": "A5",
-            "type": "NONE",
-            "data": {},
-            "display_text": "I came here for caffeine, not trouble."
+            "type": "SAME",
+            "data": {
+                "person1": "A5",
+                "person2": "C4"
+            },
+            "display_text": "Uma and Rosa have the same status."
         },
         {
             "id": "clue_B5",
