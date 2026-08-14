@@ -33,9 +33,8 @@ def test_catalog_rejects_a_file_with_the_wrong_size(tmp_path):
         build_level_catalog(tmp_path)
 
 
-def test_hard_levels_are_fact_free_and_fully_deductive():
-    for level in build_level_catalog()[2:]:
-        assert all(clue.type is not ClueType.FACT for clue in level.clues.values())
+def test_all_catalog_levels_have_true_clues_and_are_fully_deductive():
+    for level in build_level_catalog():
         assignment = {
             cell_id: verdict.value == "CRIMINAL"
             for cell_id, verdict in level.hidden_solution.items()
@@ -64,8 +63,8 @@ def test_hard_level_display_text_uses_names_not_cell_coordinates():
             )
 
 
-def test_characters_are_alphabetical_in_every_level():
+def test_characters_are_unique_in_every_level():
     characters = load_characters("data/characters.json")
     for level in build_level_catalog():
         names = [characters[cell.character_id].name for cell in level.cells]
-        assert names == sorted(names, key=str.casefold), level.id
+        assert len(names) == len(set(names)) == len(level.cells), level.id

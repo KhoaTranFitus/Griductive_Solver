@@ -1,69 +1,69 @@
 {
     "id": "level_01",
-    "title": "First Investigation",
+    "title": "Closing the Circle",
     "size": 3,
     "cells": [
         {
             "id": "A1",
             "row": 1,
             "column": 1,
-            "character_id": "char_01",
+            "character_id": "char_10",
             "clue_id": "clue_A1"
         },
         {
             "id": "B1",
             "row": 1,
             "column": 2,
-            "character_id": "char_02",
+            "character_id": "char_11",
             "clue_id": "clue_B1"
         },
         {
             "id": "C1",
             "row": 1,
             "column": 3,
-            "character_id": "char_03",
+            "character_id": "char_12",
             "clue_id": "clue_C1"
         },
         {
             "id": "A2",
             "row": 2,
             "column": 1,
-            "character_id": "char_04",
+            "character_id": "char_13",
             "clue_id": "clue_A2"
         },
         {
             "id": "B2",
             "row": 2,
             "column": 2,
-            "character_id": "char_05",
+            "character_id": "char_14",
             "clue_id": "clue_B2"
         },
         {
             "id": "C2",
             "row": 2,
             "column": 3,
-            "character_id": "char_06",
+            "character_id": "char_15",
             "clue_id": "clue_C2"
         },
         {
             "id": "A3",
             "row": 3,
             "column": 1,
-            "character_id": "char_07",
+            "character_id": "char_16",
             "clue_id": "clue_A3"
         },
         {
             "id": "B3",
             "row": 3,
             "column": 2,
-            "character_id": "char_08",
+            "character_id": "char_17",
             "clue_id": "clue_B3"
         },
         {
             "id": "C3",
             "row": 3,
             "column": 3,
-            "character_id": "char_09",
+            "character_id": "char_18",
             "clue_id": "clue_C3"
         }
     ],
@@ -71,59 +71,59 @@
         "A1"
     ],
     "solution": {
-        "A1": "INNOCENT",
-        "B1": "CRIMINAL",
-        "C1": "INNOCENT",
+        "A1": "CRIMINAL",
+        "B1": "INNOCENT",
+        "C1": "CRIMINAL",
         "A2": "CRIMINAL",
-        "B2": "INNOCENT",
-        "C2": "CRIMINAL",
+        "B2": "CRIMINAL",
+        "C2": "INNOCENT",
         "A3": "CRIMINAL",
         "B3": "INNOCENT",
-        "C3": "CRIMINAL"
+        "C3": "INNOCENT"
     },
     "clues": [
         {
             "id": "clue_A1",
             "owner_cell": "A1",
-            "type": "DIFFERENT",
+            "type": "FACT",
             "data": {
-                "person1": "A1",
-                "person2": "B1"
+                "person": "B2",
+                "status": "CRIMINAL"
             },
-            "display_text": "Alice and Benjamin have different statuses."
+            "display_text": "Noah is a criminal."
         },
         {
             "id": "clue_B1",
             "owner_cell": "B1",
-            "type": "EXACTLY",
+            "type": "DIFFERENT",
             "data": {
-                "k": 1,
-                "region": {
-                    "type": "ROW",
-                    "index": 1
-                }
+                "person1": "B1",
+                "person2": "A1"
             },
-            "display_text": "Exactly one person in row 1 is a criminal."
+            "display_text": "Katherine and Julian have different statuses."
         },
         {
             "id": "clue_C1",
             "owner_cell": "C1",
-            "type": "FACT",
+            "type": "SAME",
             "data": {
-                "person": "A2",
-                "status": "CRIMINAL"
+                "person1": "C1",
+                "person2": "A3"
             },
-            "display_text": "A2 is a criminal."
+            "display_text": "Liam and Peter have the same status."
         },
         {
             "id": "clue_A2",
             "owner_cell": "A2",
-            "type": "SAME",
+            "type": "AT_MOST",
             "data": {
-                "person1": "A2",
-                "person2": "C2"
+                "k": 2,
+                "region": {
+                    "type": "ROW",
+                    "index": 2
+                }
             },
-            "display_text": "Daniel and Felix have the same status."
+            "display_text": "At most two people in row 2 are criminals."
         },
         {
             "id": "clue_B2",
@@ -141,45 +141,51 @@
         {
             "id": "clue_C2",
             "owner_cell": "C2",
-            "type": "DIFFERENT",
+            "type": "PARITY",
             "data": {
-                "person1": "C2",
-                "person2": "B2"
+                "parity": "EVEN",
+                "region": {
+                    "type": "NEIGHBORS",
+                    "center": "B2"
+                }
             },
-            "display_text": "Felix and Emma have different statuses."
+            "display_text": "There is an even number of criminals neighboring Noah."
         },
         {
             "id": "clue_A3",
             "owner_cell": "A3",
-            "type": "SAME",
+            "type": "AT_MOST",
             "data": {
-                "person1": "A3",
-                "person2": "C3"
-            },
-            "display_text": "Grace and Iris have the same status."
-        },
-        {
-            "id": "clue_B3",
-            "owner_cell": "B3",
-            "type": "DIFFERENT",
-            "data": {
-                "person1": "B3",
-                "person2": "A3"
-            },
-            "display_text": "Henry and Grace have different statuses."
-        },
-        {
-            "id": "clue_C3",
-            "owner_cell": "C3",
-            "type": "EXACTLY",
-            "data": {
-                "k": 2,
+                "k": 1,
                 "region": {
                     "type": "ROW",
                     "index": 3
                 }
             },
-            "display_text": "Exactly two people in row 3 are criminals."
+            "display_text": "At most one person in row 3 is a criminal."
+        },
+        {
+            "id": "clue_B3",
+            "owner_cell": "B3",
+            "type": "EXACTLY",
+            "data": {
+                "k": 2,
+                "region": {
+                    "type": "ROW",
+                    "index": 1
+                }
+            },
+            "display_text": "Exactly two people in row 1 are criminals."
+        },
+        {
+            "id": "clue_C3",
+            "owner_cell": "C3",
+            "type": "DIFFERENT",
+            "data": {
+                "person1": "C3",
+                "person2": "A2"
+            },
+            "display_text": "Ryan and Mia have different statuses."
         }
     ]
 }

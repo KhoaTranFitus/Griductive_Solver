@@ -1,7 +1,8 @@
 {
     "id": "level_04",
-    "title": "Hidden Network",
+    "title": "Delayed Evidence",
     "size": 4,
+    "difficulty": 8.5,
     "cells": [
         {
             "id": "A1",
@@ -117,301 +118,260 @@
         }
     ],
     "initial_revealed": [
-        "D2"
+        "A1"
     ],
     "solution": {
-        "A1": "CRIMINAL",
-        "B1": "INNOCENT",
+        "A1": "INNOCENT",
+        "B1": "CRIMINAL",
         "C1": "CRIMINAL",
         "D1": "INNOCENT",
-        "A2": "INNOCENT",
+        "A2": "CRIMINAL",
         "B2": "CRIMINAL",
         "C2": "INNOCENT",
-        "D2": "CRIMINAL",
+        "D2": "INNOCENT",
         "A3": "CRIMINAL",
         "B3": "CRIMINAL",
         "C3": "INNOCENT",
         "D3": "INNOCENT",
-        "A4": "INNOCENT",
-        "B4": "CRIMINAL",
-        "C4": "CRIMINAL",
-        "D4": "INNOCENT"
+        "A4": "CRIMINAL",
+        "B4": "INNOCENT",
+        "C4": "INNOCENT",
+        "D4": "CRIMINAL"
     },
     "clues": [
-        {
-            "id": "clue_D2",
-            "owner_cell": "D2",
-            "type": "SAME",
-            "data": {
-                "person1": "D2",
-                "person2": "A1"
-            },
-            "display_text": "Quinn and Julian have the same verdict."
-        },
         {
             "id": "clue_A1",
             "owner_cell": "A1",
             "type": "EXACTLY",
             "data": {
-                "k": 1,
-                "status": "INNOCENT",
+                "k": 2,
+                "status": "CRIMINAL",
                 "region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "A1",
-                        "C3"
+                    "type": "INTERSECTION",
+                    "regions": [
+                        {
+                            "type": "NEIGHBORS",
+                            "center": "B2"
+                        },
+                        {
+                            "type": "NEIGHBORS",
+                            "center": "C2"
+                        },
+                        {
+                            "type": "ROW",
+                            "index": 1
+                        }
                     ]
                 }
             },
-            "display_text": "Exactly 1 of Julian and Thomas is innocent."
-        },
-        {
-            "id": "clue_C3",
-            "owner_cell": "C3",
-            "type": "PARITY",
-            "data": {
-                "parity": "EVEN",
-                "status": "INNOCENT",
-                "region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "D2",
-                        "C3",
-                        "B1"
-                    ]
-                }
-            },
-            "display_text": "An even number of innocents are among Quinn, Thomas, Katherine."
+            "display_text": "Exactly 2 criminals in row 1 are common neighbors of Olivia and Peter."
         },
         {
             "id": "clue_B1",
             "owner_cell": "B1",
             "type": "EQUAL_COUNT",
             "data": {
-                "status": "INNOCENT",
-                "region1": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "D3"
-                    ]
+                "status": "CRIMINAL",
+                "left_region": {
+                    "type": "ROW",
+                    "index": 4
                 },
-                "region2": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C3"
-                    ]
+                "right_region": {
+                    "type": "ROW",
+                    "index": 1
                 }
             },
-            "display_text": "Uma and Thomas represent an equal number of innocents."
+            "display_text": "Rows 4 and 1 contain an equal number of criminals."
         },
         {
-            "id": "clue_D3",
-            "owner_cell": "D3",
+            "id": "clue_C1",
+            "owner_cell": "C1",
+            "type": "AT_MOST",
+            "data": {
+                "k": 2,
+                "status": "CRIMINAL",
+                "region": {
+                    "type": "ROW",
+                    "index": 1
+                }
+            },
+            "display_text": "At most 2 people in row 1 are criminals."
+        },
+        {
+            "id": "clue_D1",
+            "owner_cell": "D1",
+            "type": "AT_MOST",
+            "data": {
+                "k": 1,
+                "status": "CRIMINAL",
+                "region": {
+                    "type": "LEFT_OF",
+                    "target": "D4"
+                }
+            },
+            "display_text": "At most 1 criminal is to the left of Zoe."
+        },
+        {
+            "id": "clue_A2",
+            "owner_cell": "A2",
+            "type": "CONNECTED",
+            "data": {
+                "status": "CRIMINAL",
+                "region": {
+                    "type": "ROW",
+                    "index": 2
+                }
+            },
+            "display_text": "All criminals in row 2 are connected."
+        },
+        {
+            "id": "clue_B2",
+            "owner_cell": "B2",
             "type": "COMPARE_COUNT",
             "data": {
                 "status": "CRIMINAL",
-                "operator": "LT",
+                "operator": "GREATER_THAN",
                 "left_region": {
                     "type": "EXPLICIT",
                     "cells": [
-                        "D4"
+                        "A3",
+                        "B3"
                     ]
                 },
                 "right_region": {
                     "type": "EXPLICIT",
                     "cells": [
-                        "D2"
+                        "C3",
+                        "D3"
                     ]
                 }
             },
-            "display_text": "Zoe represents fewer criminals than Quinn."
+            "display_text": "There are more criminals on the left half of row 3 than on the right half."
+        },
+        {
+            "id": "clue_C2",
+            "owner_cell": "C2",
+            "type": "EQUAL_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "left_region": {
+                    "type": "ROW",
+                    "index": 3
+                },
+                "right_region": {
+                    "type": "ROW",
+                    "index": 2
+                }
+            },
+            "display_text": "Rows 3 and 2 contain an equal number of criminals."
+        },
+        {
+            "id": "clue_D2",
+            "owner_cell": "D2",
+            "type": "PARITY",
+            "data": {
+                "status": "CRIMINAL",
+                "parity": "ODD",
+                "region": {
+                    "type": "EXPLICIT",
+                    "cells": [
+                        "B2",
+                        "C2"
+                    ]
+                }
+            },
+            "display_text": "There is an odd number of criminals between Olivia and Peter."
+        },
+        {
+            "id": "clue_A3",
+            "owner_cell": "A3",
+            "type": "NONE",
+            "data": {},
+            "display_text": "I was outside when the lights went out."
+        },
+        {
+            "id": "clue_B3",
+            "owner_cell": "B3",
+            "type": "COMPARE_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "operator": "GREATER_THAN",
+                "left_region": {
+                    "type": "COLUMN",
+                    "index": 1
+                },
+                "right_region": {
+                    "type": "COLUMN",
+                    "index": 3
+                }
+            },
+            "display_text": "Column A contains more criminals than column C."
+        },
+        {
+            "id": "clue_C3",
+            "owner_cell": "C3",
+            "type": "PARITY",
+            "data": {
+                "status": "CRIMINAL",
+                "parity": "EVEN",
+                "region": {
+                    "type": "NEIGHBORS",
+                    "center": "A4"
+                }
+            },
+            "display_text": "There is an even number of criminals neighboring Victor."
+        },
+        {
+            "id": "clue_D3",
+            "owner_cell": "D3",
+            "type": "EQUAL_COUNT",
+            "data": {
+                "status": "CRIMINAL",
+                "left_region": {
+                    "type": "ROW",
+                    "index": 2
+                },
+                "right_region": {
+                    "type": "ROW",
+                    "index": 1
+                }
+            },
+            "display_text": "Rows 2 and 1 contain an equal number of criminals."
+        },
+        {
+            "id": "clue_A4",
+            "owner_cell": "A4",
+            "type": "NONE",
+            "data": {},
+            "display_text": "I never went near the evidence room."
+        },
+        {
+            "id": "clue_B4",
+            "owner_cell": "B4",
+            "type": "NONE",
+            "data": {},
+            "display_text": "I only returned to collect my coat."
+        },
+        {
+            "id": "clue_C4",
+            "owner_cell": "C4",
+            "type": "NONE",
+            "data": {},
+            "display_text": "I was writing notes for myself."
         },
         {
             "id": "clue_D4",
             "owner_cell": "D4",
-            "type": "DIFFERENT",
-            "data": {
-                "person1": "D4",
-                "person2": "C1"
-            },
-            "display_text": "Exactly one of Zoe and Liam is criminal."
-        },
-        {
-            "id": "clue_C1",
-            "owner_cell": "C1",
             "type": "EXACTLY",
             "data": {
                 "k": 1,
                 "status": "CRIMINAL",
                 "region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C1",
-                        "A4"
-                    ]
+                    "type": "BELOW",
+                    "target": "D1"
                 }
             },
-            "display_text": "Exactly 1 of Liam and Victor is criminal."
-        },
-        {
-            "id": "clue_A4",
-            "owner_cell": "A4",
-            "type": "PARITY",
-            "data": {
-                "parity": "EVEN",
-                "status": "CRIMINAL",
-                "region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "D2",
-                        "A4",
-                        "C4"
-                    ]
-                }
-            },
-            "display_text": "An even number of criminals are among Quinn, Victor, Xavier."
-        },
-        {
-            "id": "clue_C4",
-            "owner_cell": "C4",
-            "type": "EQUAL_COUNT",
-            "data": {
-                "status": "INNOCENT",
-                "region1": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "A2"
-                    ]
-                },
-                "region2": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C3"
-                    ]
-                }
-            },
-            "display_text": "Noah and Thomas represent an equal number of innocents."
-        },
-        {
-            "id": "clue_A2",
-            "owner_cell": "A2",
-            "type": "COMPARE_COUNT",
-            "data": {
-                "status": "CRIMINAL",
-                "operator": "GT",
-                "left_region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "B2"
-                    ]
-                },
-                "right_region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C3"
-                    ]
-                }
-            },
-            "display_text": "Olivia represents more criminals than Thomas."
-        },
-        {
-            "id": "clue_B2",
-            "owner_cell": "B2",
-            "type": "SAME",
-            "data": {
-                "person1": "B2",
-                "person2": "A3"
-            },
-            "display_text": "Olivia and Ryan have the same verdict."
-        },
-        {
-            "id": "clue_A3",
-            "owner_cell": "A3",
-            "type": "CONNECTED",
-            "data": {
-                "status": "CRIMINAL",
-                "connectivity": "ORTHOGONAL",
-                "region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "B2",
-                        "B3",
-                        "A3"
-                    ]
-                }
-            },
-            "display_text": "The criminals among Olivia, Sophia, Ryan are connected."
-        },
-        {
-            "id": "clue_B3",
-            "owner_cell": "B3",
-            "type": "PARITY",
-            "data": {
-                "parity": "ODD",
-                "status": "INNOCENT",
-                "region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "D2",
-                        "B3",
-                        "D1"
-                    ]
-                }
-            },
-            "display_text": "An odd number of innocents are among Quinn, Sophia, Mia."
-        },
-        {
-            "id": "clue_D1",
-            "owner_cell": "D1",
-            "type": "EQUAL_COUNT",
-            "data": {
-                "status": "INNOCENT",
-                "region1": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C2"
-                    ]
-                },
-                "region2": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C3"
-                    ]
-                }
-            },
-            "display_text": "Peter and Thomas represent an equal number of innocents."
-        },
-        {
-            "id": "clue_C2",
-            "owner_cell": "C2",
-            "type": "COMPARE_COUNT",
-            "data": {
-                "status": "CRIMINAL",
-                "operator": "GT",
-                "left_region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "B4"
-                    ]
-                },
-                "right_region": {
-                    "type": "EXPLICIT",
-                    "cells": [
-                        "C3"
-                    ]
-                }
-            },
-            "display_text": "Wendy represents more criminals than Thomas."
-        },
-        {
-            "id": "clue_B4",
-            "owner_cell": "B4",
-            "type": "SAME",
-            "data": {
-                "person1": "B4",
-                "person2": "D2"
-            },
-            "display_text": "Wendy and Quinn have the same verdict."
+            "display_text": "Exactly 1 criminal is below Mia."
         }
     ]
 }

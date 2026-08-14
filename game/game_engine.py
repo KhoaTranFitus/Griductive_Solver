@@ -72,8 +72,12 @@ class GameEngine:
             )
 
         public_state = self.get_public_state()
-        classifications = self._agent.classify_all(public_state)
-        proved_verdict = classifications.get(cell_id, Verdict.UNKNOWN)
+        classify_one = getattr(self._agent, "classify_one", None)
+        if callable(classify_one):
+            proved_verdict = classify_one(public_state, cell_id)
+        else:
+            classifications = self._agent.classify_all(public_state)
+            proved_verdict = classifications.get(cell_id, Verdict.UNKNOWN)
 
         if proved_verdict is Verdict.INCONSISTENT:
             return SubmissionResponse(
@@ -128,12 +132,33 @@ class GameEngine:
 
         return move
 
-    def auto_solve_step(self) -> SubmissionResponse | None:
+    def auto_solve_step(
+        self,
+        proved_move: AgentMove | None = None,
+    ) -> SubmissionResponse | None:
         """Apply one forced move, or return None when none is available."""
-        move = self.get_hint()
+        move = proved_move if proved_move is not None else self.get_hint()
         if move is None:
             return None
-        return self.submit_verdict(move.cell_id, move.verdict)
+
+        if move.cell_id not in self.get_public_state().unresolved_cells:
+            return None
+        if move.verdict not in {Verdict.CRIMINAL, Verdict.INNOCENT}:
+            raise ValueError("The agent returned a non-final verdict.")
+
+        # ``get_hint`` has already proved this verdict against the current
+        # public state. Applying it directly avoids repeating the same SAT
+        # queries immediately in ``submit_verdict``.
+        cell = self._level.get_cell(move.cell_id)
+        self._state.reveal_cell(move.cell_id, move.verdict)
+        return SubmissionResponse(
+            result=SubmissionResult.ACCEPTED,
+            cell_id=move.cell_id,
+            submitted_verdict=move.verdict,
+            proved_verdict=move.verdict,
+            revealed_clue=self._level.get_clue(cell.clue_id),
+            message="The verdict was accepted and the clue was revealed.",
+        )
 
     def run_deduction_loop(self) -> DeductionRunResult:
         """Apply forced public deductions until reaching a terminal state.

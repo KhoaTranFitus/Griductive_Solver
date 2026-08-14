@@ -477,7 +477,7 @@ feature/gui-assets
 Phụ trách cài đặt và chỉnh sửa giao diện để phù hợp với các màn chơi 3x3,
 4x4 và 5x5, đồng thời ưu tiên khả năng đọc clue.
 
-### 19.1 Card khi đang úp
+### 19.1 Card khi đang úp (tham khảo trong assets/characters/image.png)
 
 - Hiển thị avatar lớn, rõ và nằm ở trung tâm card.
 - Tên nhân vật nằm bên dưới avatar.
