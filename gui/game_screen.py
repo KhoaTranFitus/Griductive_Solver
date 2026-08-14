@@ -12,7 +12,6 @@ from __future__ import annotations
 import tkinter.filedialog as filedialog
 import threading
 from collections.abc import Mapping
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import customtkinter as ctk
@@ -26,6 +25,7 @@ from gui.components import (
     HowToPlayPanel,
     NotProvablePopup,
     StatusMessage,
+    VerdictFeedbackPopup,
     VerdictPopup,
     VictoryPopup,
 )
@@ -50,7 +50,7 @@ class GameScreen(ctk.CTkFrame):
         on_next: "callable | None" = None,
         **kwargs,
     ) -> None:
-        super().__init__(master, fg_color="#221e1d", **kwargs)
+        super().__init__(master, fg_color="#0a0b0e", **kwargs)
 
         self._engine = engine
         self._characters = dict(characters)
@@ -137,53 +137,60 @@ class GameScreen(ctk.CTkFrame):
 
         # Level Navigation (Back, Badge, Prev/Next) on left of top bar
         ctk.CTkButton(
-            self._top_bar, text="← Levels", width=85, height=32, corner_radius=8,
+            self._top_bar, text="← Levels", width=85, height=32, corner_radius=6,
             command=self._on_back if self._on_back else lambda: None,
-            fg_color="#3d3632", hover_color="#4a433e", font=ctk.CTkFont(size=12, weight="bold"),
-        ).pack(side="left", padx=(0, 10))
+            fg_color="#0d0f14", hover_color="#161a24", text_color="#9aa2b6",
+            border_width=1, border_color="#252936",
+            font=ctk.CTkFont(family="Consolas", size=12, weight="bold"),
+        ).pack(side="left", padx=(0, 8))
 
         self._lbl_level_badge = ctk.CTkLabel(
             self._top_bar, text="LEVEL 01 · 3×3",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#d4a574", fg_color="#2d2926", corner_radius=8, padx=12, pady=4,
+            font=ctk.CTkFont(family="Consolas", size=12, weight="bold"),
+            text_color="#e0f2fe", fg_color="#161924", corner_radius=6, padx=12, pady=4,
         )
         self._lbl_level_badge.pack(side="left", padx=(0, 6))
 
         self._btn_prev = ctk.CTkButton(
-            self._top_bar, text="←", width=34, height=32, corner_radius=8,
+            self._top_bar, text="←", width=34, height=32, corner_radius=6,
             command=self._on_previous, state="normal" if self._on_previous else "disabled",
-            fg_color="#3d3632", hover_color="#d4a574", font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="#0d0f14", hover_color="#161a24", text_color="#9aa2b6",
+            border_width=1, border_color="#252936",
+            font=ctk.CTkFont(family="Consolas", size=13, weight="bold"),
         )
         self._btn_prev.pack(side="left", padx=(2, 2))
 
         self._btn_next = ctk.CTkButton(
-            self._top_bar, text="→", width=34, height=32, corner_radius=8,
+            self._top_bar, text="→", width=34, height=32, corner_radius=6,
             command=self._on_next, state="normal" if self._on_next else "disabled",
-            fg_color="#3d3632", hover_color="#d4a574", font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="#0d0f14", hover_color="#161a24", text_color="#9aa2b6",
+            border_width=1, border_color="#252936",
+            font=ctk.CTkFont(family="Consolas", size=13, weight="bold"),
         )
         self._btn_next.pack(side="left", padx=(0, 12))
 
-        # Action Buttons (Hint, Auto Solve, Restart, Load) on right of top bar
+        # Action Buttons (Hint, Auto Solve, Restart) on right of top bar
         action_row = ctk.CTkFrame(self._top_bar, fg_color="transparent")
         action_row.pack(side="right")
 
         buttons = [
-            ("💡 Hint",       "#6c3d8f", "#7d4ea0", self._on_hint),
-            ("⚡ Auto Solve", "#8f6c2d", "#a07d3e", self._on_auto_solve),
-            ("↻ Restart",    "#2c3e50", "#34495e", self._on_restart),
-            ("📂 Load",       "#1a5e50", "#238b76", self._on_load),
+            ("💡 Hint",       "#0e1a2b", "#182c48", "#4f7a9c", self._on_hint),
+            ("⚡ Auto Solve", "#1a162b", "#2a2248", "#7c5ea8", self._on_auto_solve),
+            ("↻ Restart",    "#0d0f14", "#161a24", "#252936", self._on_restart),
         ]
-        for text, fg, hover, cmd in buttons:
+        for text, fg, hover, border, cmd in buttons:
             ctk.CTkButton(
-                action_row, text=text, font=ctk.CTkFont(size=11, weight="bold"),
-                fg_color=fg, hover_color=hover, width=88, height=32, corner_radius=8,
+                action_row, text=text,
+                font=ctk.CTkFont(family="Consolas", size=11, weight="bold"),
+                fg_color=fg, hover_color=hover, text_color="#e0f2fe",
+                border_width=1, border_color=border,
+                width=88, height=32, corner_radius=6,
                 command=cmd,
             ).pack(side="left", padx=3)
 
-        # Center Area: Scrollable Board Container
-        self._board_container = ctk.CTkScrollableFrame(
+        # Center Area: Non-scrollable Single-Page Board Container
+        self._board_container = ctk.CTkFrame(
             self._left_panel, fg_color="transparent",
-            scrollbar_button_color="#3a3430", scrollbar_button_hover_color="#8c8279",
         )
         self._board_container.grid(row=1, column=0, sticky="nsew")
 
@@ -261,7 +268,7 @@ class GameScreen(ctk.CTkFrame):
             child.destroy()
 
         size = public_state.size
-        pad_val = 5 if size == 3 else (3 if size == 4 else 2)
+        pad_val = 8 if size == 3 else (6 if size == 4 else 5)
 
         # Update header & sidebar info
         level_text = (
@@ -279,13 +286,13 @@ class GameScreen(ctk.CTkFrame):
         if hasattr(self, "_btn_next") and self._btn_next:
             self._btn_next.configure(state="normal" if self._on_next else "disabled")
 
-        # Grid frame
+        # Single-page dynamic grid frame
         grid_frame = ctk.CTkFrame(self._board_container, fg_color="transparent")
         grid_frame.pack(expand=True)
 
         for i in range(size):
-            grid_frame.grid_columnconfigure(i, weight=1, pad=pad_val)
-            grid_frame.grid_rowconfigure(i, weight=1, pad=pad_val)
+            grid_frame.grid_columnconfigure(i, weight=1)
+            grid_frame.grid_rowconfigure(i, weight=1)
 
         # Build clue lookup
         clue_map: dict[str, Clue] = {}
@@ -299,7 +306,7 @@ class GameScreen(ctk.CTkFrame):
             if char:
                 cell_char_map[cell.id] = char
 
-        # Create cards
+        # Create cards — fixed size, not stretched
         for cell in public_state.cells:
             character = self._characters.get(cell.character_id)
             is_revealed = cell.id not in public_state.unresolved_cells
@@ -313,7 +320,6 @@ class GameScreen(ctk.CTkFrame):
                 column=cell.column - 1,
                 padx=pad_val,
                 pady=pad_val,
-                sticky="nsew",
             )
             self._cards[cell.id] = card
 
@@ -391,31 +397,30 @@ class GameScreen(ctk.CTkFrame):
     #  Clue logic highlight computation
     # ──────────────────────────────────────────────
     def _compute_clue_highlights(self, clue: Clue) -> dict[str, str]:
-        """Compute border colors for all cells related to a clue by logical rules."""
+        """Compute yellow border highlights for all cells related to a clue by logical rules."""
         highlights: dict[str, str] = {}
         public_state = self._engine.get_public_state()
 
-        # Always highlight clue owner cell in Gold
-        highlights[clue.owner_cell] = "#f39c12"
+        YELLOW = "#f1c40f"
+
+        # Always highlight clue owner cell in Yellow
+        highlights[clue.owner_cell] = YELLOW
 
         ctype = clue.type
         cdata = clue.data
 
         if ctype == ClueType.FACT:
             person = cdata.get("person")
-            status = str(cdata.get("status", "")).upper()
             if person:
-                color = "#e74c3c" if status == "CRIMINAL" else "#2ecc71"
-                highlights[person] = color
+                highlights[person] = YELLOW
 
         elif ctype in (ClueType.SAME, ClueType.DIFFERENT):
             p1 = cdata.get("person1")
             p2 = cdata.get("person2")
-            color = "#3498db" if ctype == ClueType.SAME else "#e67e22"
             if p1:
-                highlights[p1] = color
+                highlights[p1] = YELLOW
             if p2:
-                highlights[p2] = color
+                highlights[p2] = YELLOW
 
         elif ctype in (ClueType.EXACTLY, ClueType.AT_LEAST, ClueType.AT_MOST, ClueType.PARITY):
             raw_region = cdata.get("region")
@@ -424,8 +429,7 @@ class GameScreen(ctk.CTkFrame):
                     region_obj = parse_region(raw_region)
                     region_cells = resolve_region(region_obj, public_state.cells)
                     for cid in region_cells:
-                        if cid not in highlights:
-                            highlights[cid] = "#f1c40f"
+                        highlights[cid] = YELLOW
                 except Exception:
                     pass
 
@@ -453,7 +457,7 @@ class GameScreen(ctk.CTkFrame):
             if isinstance(raw_region, dict):
                 try:
                     for cid in resolve_region(parse_region(raw_region), public_state.cells):
-                        highlights.setdefault(cid, "#9b59b6")
+                        highlights[cid] = YELLOW
                 except Exception:
                     pass
 
@@ -599,16 +603,26 @@ class GameScreen(ctk.CTkFrame):
                 f"⚠️ NOT PROVABLE — Not enough evidence yet to prove {name} [{cell_id}] is {verdict.value}.",
                 "warning",
             )
-            NotProvablePopup(
+            opp = "innocent" if verdict == Verdict.CRIMINAL else "criminal"
+            VerdictFeedbackPopup(
                 master=self,
                 character_name=name,
                 verdict=verdict.value,
+                result_type="NOT_PROVABLE",
+                opposite_verdict=opp,
             )
         elif response.result == SubmissionResult.CONTRADICTED:
             proved = response.proved_verdict.value if response.proved_verdict else "different"
             self._status.set_message(
                 f"❌ CONTRADICTED — Evidence proves {name} [{cell_id}] is {proved}, not {verdict.value}!",
                 "error",
+            )
+            VerdictFeedbackPopup(
+                master=self,
+                character_name=name,
+                verdict=verdict.value,
+                result_type="CONTRADICTED",
+                opposite_verdict=proved,
             )
         elif response.result == SubmissionResult.INCONSISTENT:
             self._status.set_message(
@@ -747,43 +761,6 @@ class GameScreen(ctk.CTkFrame):
         # Schedule next step for smooth animated reveal
         if self.winfo_exists() and self._auto_solving:
             self.after(600, self._auto_solve_step)
-
-    def _on_load(self) -> None:
-        """Open a file dialog to load a new level and reset state cleanly."""
-        filepath = filedialog.askopenfilename(
-            title="Load Level",
-            filetypes=[("JSON files", "*.json")],
-            initialdir="data/levels",
-        )
-        if not filepath:
-            return
-
-        try:
-            from game.level_loader import load_level
-            from game.level_validator import validate_level
-            from game.game_engine import GameEngine
-
-            level = load_level(filepath)
-            validate_level(level)
-            self._engine = GameEngine(level)
-
-            self._highlighted_clue_id = None
-            self._highlighted_cell = None
-            self._auto_solving = False
-            self._victory_shown = False
-
-            self._refresh_board()
-            self._start_timer()
-            self._status.set_message(
-                f"📂 Loaded level: {Path(filepath).stem}",
-                "success",
-            )
-
-            if self._on_level_loaded:
-                self._on_level_loaded(self._engine)
-
-        except Exception as exc:
-            self._status.set_message(f"❌ Load level error: {exc}", "error")
 
     # ──────────────────────────────────────────────
     #  Public API for external engine swap

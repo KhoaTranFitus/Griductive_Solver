@@ -27,12 +27,12 @@ from core.models import Character, Clue
 # ══════════════════════════════════════════════════════════
 
 # Background layers
-BG_ROOT         = "#221e1d"
-BG_SIDEBAR      = "#1c1917"
-BG_CARD         = "#2d2926"
-BG_CARD_HOVER   = "#3a3430"
-BG_POPUP        = "#2d2926"
-BG_INPUT        = "#1c1917"
+BG_ROOT         = "#0a0b0e"
+BG_SIDEBAR      = "#0f1117"
+BG_CARD         = "#161922"
+BG_CARD_HOVER   = "#222736"
+BG_POPUP        = "#141720"
+BG_INPUT        = "#0d0f14"
 
 # Face-up card tints
 BG_INNOCENT     = "#192a1f"
@@ -58,7 +58,6 @@ CLR_UNKNOWN    = "#6b6560"
 BTN_HINT       = "#6c3d8f";  BTN_HINT_H    = "#7d4ea0"
 BTN_AUTO       = "#8f6c2d";  BTN_AUTO_H    = "#a07d3e"
 BTN_RESTART    = "#2c3e50";  BTN_RESTART_H = "#34495e"
-BTN_LOAD       = "#1a5e50";  BTN_LOAD_H    = "#238b76"
 BTN_CANCEL     = "#3d3632";  BTN_CANCEL_H  = "#4a433e"
 
 # Status levels
@@ -116,52 +115,54 @@ def create_placeholder(size: int = AVATAR_SIZE) -> ctk.CTkImage:
     return ctk.CTkImage(light_image=img, dark_image=img, size=(size, size))
 
 
-# Card sizing configurations per grid size (3x3, 4x4, 5x5) for seamless auto-fit scaling
+# Card sizing configurations per grid size (3x3, 4x4, 5x5)
 _CARD_CONFIGS: dict[int, dict] = {
     3: {
         "width": 175,
-        "height": 265,
-        "avatar_size": 68,
-        "font_name": 13,
-        "font_occ": 10,
-        "font_verdict": 12,
+        "height": 210,
+        "avatar_size_fd": 68,
+        "avatar_size_fu": 34,
+        "font_coord": 11,
+        "font_name": 14,
+        "font_occ": 12,
         "font_clue": 13,
-        "padx": 6,
-        "pady": 6,
     },
     4: {
-        "width": 135,
-        "height": 210,
-        "avatar_size": 50,
-        "font_name": 12,
-        "font_occ": 9,
-        "font_verdict": 11,
-        "font_clue": 11,
-        "padx": 4,
-        "pady": 4,
+        "width": 142,
+        "height": 172,
+        "avatar_size_fd": 54,
+        "avatar_size_fu": 28,
+        "font_coord": 10,
+        "font_name": 13,
+        "font_occ": 11,
+        "font_clue": 12,
     },
     5: {
-        "width": 112,
-        "height": 175,
-        "avatar_size": 38,
-        "font_name": 11,
-        "font_occ": 8,
-        "font_verdict": 10,
-        "font_clue": 10,
-        "padx": 3,
-        "pady": 3,
+        "width": 118,
+        "height": 144,
+        "avatar_size_fd": 44,
+        "avatar_size_fu": 24,
+        "font_coord": 9,
+        "font_name": 12,
+        "font_occ": 10,
+        "font_clue": 11,
     },
 }
 
 
 class CharacterCard(ctk.CTkFrame):
-    """Board tile displaying one character.
+    """Board tile displaying a character card with face-down and face-up states.
 
-    States
-    ------
-    Face-down : neutral dark card, prominent avatar, name, occupation. Clue hidden.
-    Face-up   : tinted background (green/red), verdict shown, clue prioritized.
-    Highlighted : amber border glow (used by the HINT feature).
+    Face-Down Layout:
+    -----------------
+    Top-left: Coordinate (A1, B2...)
+    Center: Prominent enlarged avatar image
+    Below: Name (bold) & Occupation (muted)
+
+    Face-Up Layout (Card C2 Style):
+    -------------------------------
+    Top Strip: Coordinate | Avatar | Name (bold) & Occupation (enlarged muted)
+    Main Body: Large readable clue text dynamically wrapping to fill space
     """
 
     def __init__(
@@ -177,13 +178,14 @@ class CharacterCard(ctk.CTkFrame):
             master,
             width=cfg["width"],
             height=cfg["height"],
-            corner_radius=12,
+            corner_radius=10,
             fg_color=BG_CARD,
             border_width=2,
             border_color=BORDER_DEFAULT,
             **kwargs,
         )
         self.pack_propagate(False)
+        self.grid_propagate(False)
 
         self._cell_id: str = ""
         self._character: Character | None = None
@@ -193,70 +195,93 @@ class CharacterCard(ctk.CTkFrame):
         self._highlighted: bool = False
         self._on_click = on_click
 
-        # ── Top header strip (Coordinate + Status Indicator Dot) ──
-        top_strip = ctk.CTkFrame(self, fg_color="transparent")
-        top_strip.pack(fill="x", padx=6, pady=(4, 0))
+        # ══════════════════════════════════════════
+        #  FACE-DOWN CONTAINER
+        # ══════════════════════════════════════════
+        self._fd_container = ctk.CTkFrame(self, fg_color="transparent", corner_radius=6)
 
-        self._lbl_coord = ctk.CTkLabel(
-            top_strip, text="",
-            font=ctk.CTkFont(family="Consolas", size=9, weight="bold"),
-            text_color=TEXT_SECONDARY, height=14,
+        self._fd_coord = ctk.CTkLabel(
+            self._fd_container, text="",
+            font=ctk.CTkFont(family="Consolas", size=cfg["font_coord"], weight="bold"),
+            text_color=TEXT_SECONDARY, anchor="w",
         )
-        self._lbl_coord.pack(side="left")
+        self._fd_coord.pack(anchor="w", padx=6, pady=(3, 0))
 
-        self._lbl_status_dot = ctk.CTkLabel(
-            top_strip, text="●",
-            font=ctk.CTkFont(size=9, weight="bold"),
-            text_color="#5a524c", height=14,
+        self._fd_avatar = ctk.CTkLabel(
+            self._fd_container, text="",
+            width=cfg["avatar_size_fd"], height=cfg["avatar_size_fd"],
         )
-        self._lbl_status_dot.pack(side="right")
+        self._fd_avatar.pack(pady=(2, 2))
 
-        # ── Avatar (Enlarged prominent size) ──
-        self._lbl_avatar = ctk.CTkLabel(
-            self, text="", width=cfg["avatar_size"], height=cfg["avatar_size"],
-        )
-        self._lbl_avatar.pack(pady=(1, 1))
-
-        # ── Name ──
-        self._lbl_name = ctk.CTkLabel(
-            self, text="",
+        self._fd_name = ctk.CTkLabel(
+            self._fd_container, text="",
             font=ctk.CTkFont(size=cfg["font_name"], weight="bold"),
-            text_color=TEXT_PRIMARY, wraplength=cfg["width"] - 12,
+            text_color=TEXT_PRIMARY,
+            wraplength=cfg["width"] - 16, justify="center",
         )
-        self._lbl_name.pack(padx=4, pady=(0, 0))
+        self._fd_name.pack(pady=(0, 0))
 
-        # ── Occupation (Shifted up, tight under Name) ──
-        self._lbl_occ = ctk.CTkLabel(
-            self, text="",
+        self._fd_occ = ctk.CTkLabel(
+            self._fd_container, text="",
             font=ctk.CTkFont(size=cfg["font_occ"]),
-            text_color=TEXT_SECONDARY, wraplength=cfg["width"] - 12,
+            text_color=TEXT_SECONDARY,
+            wraplength=cfg["width"] - 16, justify="center",
         )
-        self._lbl_occ.pack(padx=4, pady=(0, 0))
+        self._fd_occ.pack(pady=(0, 4))
 
-        # ── Verdict badge (Shifted up, tight under Occupation) ──
-        self._lbl_verdict = ctk.CTkLabel(
-            self, text="",
-            font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
-            text_color=CLR_UNKNOWN, height=14,
+        # ══════════════════════════════════════════
+        #  FACE-UP CONTAINER (Compact Header Strip + Large Clue Body)
+        # ══════════════════════════════════════════
+        self._fu_container = ctk.CTkFrame(self, fg_color="transparent", corner_radius=6)
+
+        # ── Compact Header Strip ──
+        fu_header = ctk.CTkFrame(self._fu_container, fg_color="transparent")
+        fu_header.pack(fill="x", padx=1, pady=(3, 0))
+
+        self._fu_coord = ctk.CTkLabel(
+            fu_header, text="",
+            font=ctk.CTkFont(family="Consolas", size=cfg["font_coord"], weight="bold"),
+            text_color=TEXT_SECONDARY, anchor="nw",
         )
-        self._lbl_verdict.pack(padx=4, pady=(0, 2))
+        self._fu_coord.pack(side="left", anchor="n", padx=(0, 2), pady=(1, 0))
 
-        # ── Clue text (maximizes lower area cleanly) ──
+        self._fu_avatar = ctk.CTkLabel(
+            fu_header, text="",
+            width=cfg["avatar_size_fu"], height=cfg["avatar_size_fu"],
+        )
+        self._fu_avatar.pack(side="left", padx=(0, 2), pady=(3, 0), anchor="n")
+
+        fu_info = ctk.CTkFrame(fu_header, fg_color="transparent")
+        fu_info.pack(side="left", fill="x", expand=True, anchor="n")
+
+        self._fu_name = ctk.CTkLabel(
+            fu_info, text="",
+            font=ctk.CTkFont(size=cfg["font_name"], weight="bold"),
+            text_color=TEXT_PRIMARY, anchor="w", justify="left", height=12,
+        )
+        self._fu_name.pack(anchor="w", pady=(0, 1))
+
+        self._fu_occ = ctk.CTkLabel(
+            fu_info, text="",
+            font=ctk.CTkFont(size=cfg["font_occ"]),
+            text_color=TEXT_SECONDARY, anchor="w", justify="left", height=12,
+        )
+        self._fu_occ.pack(anchor="w", pady=(2, 0))
+
+        # ── Large Clue Body Area ──
         self._lbl_clue = ctk.CTkLabel(
-            self, text="",
+            self._fu_container, text="",
             font=ctk.CTkFont(size=cfg["font_clue"]),
             text_color="#ffffff",
-            wraplength=cfg["width"] - 12, justify="center",
+            wraplength=cfg["width"] - 12,
+            justify="center", anchor="center",
         )
-        self._lbl_clue.pack(padx=4, pady=(1, 4), fill="both", expand=True)
+        self._lbl_clue.pack(fill="both", expand=True, padx=4, pady=(4, 4))
 
-        # ── Bottom status accent bar ──
-        self._status_bar = ctk.CTkFrame(
-            self, height=3, corner_radius=2, fg_color=BORDER_DEFAULT
-        )
-        self._status_bar.pack(side="bottom", fill="x", padx=6, pady=(0, 3))
+        # Start with face-down visible
+        self._fd_container.pack(fill="both", expand=True, padx=3, pady=3)
 
-        # Click + hover bindings (card and all descendant widgets)
+        # Click + hover bindings
         self.configure(cursor="hand2")
         self._bind_click_recursive(self)
 
@@ -297,90 +322,96 @@ class CharacterCard(ctk.CTkFrame):
 
     def _render(self) -> None:
         cfg = _CARD_CONFIGS.get(self._grid_size, _CARD_CONFIGS[3])
-        avatar_size = cfg["avatar_size"]
-
-        # Adapt frame dimensions
         self.configure(width=cfg["width"], height=cfg["height"])
 
-        self._lbl_coord.configure(text=self._cell_id)
+        if not self._is_revealed:
+            # ── Face-Down ──
+            self._fu_container.pack_forget()
+            self._fd_container.pack(fill="both", expand=True, padx=3, pady=3)
 
-        # avatar
-        img = None
-        if self._character:
-            img = load_avatar(self._character.avatar_path, avatar_size)
-        if img is None:
-            img = create_placeholder(avatar_size)
-        self._lbl_avatar.configure(
-            image=img, width=avatar_size, height=avatar_size
-        )
-        self._lbl_avatar._ref = img  # prevent garbage collection
-
-        # name / occupation (always visible across both face-down and face-up!)
-        if self._character:
-            self._lbl_name.configure(
-                text=self._character.name,
-                font=ctk.CTkFont(size=cfg["font_name"], weight="bold"),
-                wraplength=cfg["width"] - 12,
+            self._fd_coord.configure(
+                text=self._cell_id,
+                font=ctk.CTkFont(family="Consolas", size=cfg["font_coord"], weight="bold"),
             )
-            self._lbl_occ.configure(
-                text=self._character.occupation,
-                font=ctk.CTkFont(size=cfg["font_occ"]),
-                wraplength=cfg["width"] - 12,
-            )
-        else:
-            self._lbl_name.configure(text="Unknown")
-            self._lbl_occ.configure(text="")
 
-        # verdict badge (only shown when face-up!)
-        if self._is_revealed and self._verdict is not None:
-            if self._verdict == Verdict.CRIMINAL:
-                self._lbl_verdict.configure(
-                    text="CRIMINAL",
-                    text_color=CLR_CRIMINAL,
-                    font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
+            avatar_sz = cfg["avatar_size_fd"]
+            img = None
+            if self._character:
+                img = load_avatar(self._character.avatar_path, avatar_sz)
+            if img is None:
+                img = create_placeholder(avatar_sz)
+            self._fd_avatar.configure(image=img, width=avatar_sz, height=avatar_sz)
+            self._fd_avatar._ref = img
+
+            if self._character:
+                self._fd_name.configure(
+                    text=self._character.name,
+                    font=ctk.CTkFont(size=cfg["font_name"], weight="bold"),
+                    wraplength=cfg["width"] - 16,
                 )
-            elif self._verdict == Verdict.INNOCENT:
-                self._lbl_verdict.configure(
-                    text="INNOCENT",
-                    text_color=CLR_INNOCENT,
-                    font=ctk.CTkFont(size=cfg["font_verdict"], weight="bold"),
+                self._fd_occ.configure(
+                    text=self._character.occupation,
+                    font=ctk.CTkFont(size=cfg["font_occ"]),
+                    wraplength=cfg["width"] - 16,
                 )
             else:
-                self._lbl_verdict.configure(text="")
+                self._fd_name.configure(text="Unknown")
+                self._fd_occ.configure(text="")
         else:
-            # Face-down card: zero exposure of verdict or "?"
-            self._lbl_verdict.configure(text="")
+            # ── Face-Up ──
+            self._fd_container.pack_forget()
+            self._fu_container.pack(fill="both", expand=True, padx=3, pady=3)
 
-        # clue (face-up only — never expose hidden clues)
-        if self._is_revealed and self._clue is not None:
-            self._lbl_clue.configure(
-                text=f'"{self._clue.display_text}"',
-                font=ctk.CTkFont(size=cfg["font_clue"]),
-                wraplength=cfg["width"] - 12,
+            self._fu_coord.configure(
+                text=self._cell_id,
+                font=ctk.CTkFont(family="Consolas", size=cfg["font_coord"], weight="bold"),
             )
-        else:
-            self._lbl_clue.configure(text="")
+
+            avatar_sz = cfg["avatar_size_fu"]
+            img = None
+            if self._character:
+                img = load_avatar(self._character.avatar_path, avatar_sz)
+            if img is None:
+                img = create_placeholder(avatar_sz)
+            self._fu_avatar.configure(image=img, width=avatar_sz, height=avatar_sz)
+            self._fu_avatar._ref = img
+
+            if self._character:
+                self._fu_name.configure(
+                    text=self._character.name,
+                    font=ctk.CTkFont(size=cfg["font_name"], weight="bold"),
+                    wraplength=cfg["width"] - avatar_sz - 35,
+                )
+                self._fu_occ.configure(
+                    text=self._character.occupation,
+                    font=ctk.CTkFont(size=cfg["font_occ"]),
+                    wraplength=cfg["width"] - avatar_sz - 35,
+                )
+            else:
+                self._fu_name.configure(text="Unknown")
+                self._fu_occ.configure(text="")
+
+            if self._clue is not None:
+                self._lbl_clue.configure(
+                    text=self._clue.display_text,
+                    font=ctk.CTkFont(size=cfg["font_clue"]),
+                    wraplength=cfg["width"] - 12,
+                )
+            else:
+                self._lbl_clue.configure(text="")
 
         self._apply_style()
 
     def _apply_style(self) -> None:
         if self._highlighted:
-            color = getattr(self, "_custom_border_color", None) or BORDER_HINT
-            self.configure(border_color=color, border_width=3, fg_color=BG_CARD_HOVER)
-            self._lbl_status_dot.configure(text="★", text_color=BORDER_HINT)
-            self._status_bar.configure(fg_color=color)
+            color = getattr(self, "_custom_border_color", None) or "#f1c40f"
+            self.configure(border_color=color, border_width=3, corner_radius=10, fg_color=BG_CARD_HOVER)
         elif self._is_revealed and self._verdict == Verdict.CRIMINAL:
-            self.configure(border_color=BORDER_CRIMINAL, border_width=2, fg_color=BG_CRIMINAL)
-            self._lbl_status_dot.configure(text="●", text_color=CLR_CRIMINAL)
-            self._status_bar.configure(fg_color=BORDER_CRIMINAL)
+            self.configure(border_color=BORDER_CRIMINAL, border_width=2, corner_radius=10, fg_color=BG_CRIMINAL)
         elif self._is_revealed and self._verdict == Verdict.INNOCENT:
-            self.configure(border_color=BORDER_INNOCENT, border_width=2, fg_color=BG_INNOCENT)
-            self._lbl_status_dot.configure(text="●", text_color=CLR_INNOCENT)
-            self._status_bar.configure(fg_color=BORDER_INNOCENT)
+            self.configure(border_color=BORDER_INNOCENT, border_width=2, corner_radius=10, fg_color=BG_INNOCENT)
         else:
-            self.configure(border_color=BORDER_DEFAULT, border_width=2, fg_color=BG_CARD)
-            self._lbl_status_dot.configure(text="●", text_color="#5a524c")
-            self._status_bar.configure(fg_color=BORDER_DEFAULT)
+            self.configure(border_color=BORDER_DEFAULT, border_width=2, corner_radius=10, fg_color=BG_CARD)
 
     def _on_enter(self, _e) -> None:
         if not self._is_revealed and not self._highlighted:
@@ -545,16 +576,39 @@ class VerdictPopup(ctk.CTkToplevel):
 # ══════════════════════════════════════════════════════════
 
 class HowToPlayPanel(ctk.CTkFrame):
-    """Dedicated rules panel rendered directly on the dark background with clean typography."""
+    """Collapsible rules panel with interactive header toggle to free up space for Revealed Clues."""
 
     def __init__(self, master: ctk.CTkBaseClass, **kwargs) -> None:
         super().__init__(master, fg_color="transparent", **kwargs)
 
-        ctk.CTkLabel(
-            self, text="📖  HOW TO PLAY",
+        self._collapsed: bool = False
+
+        # ── Header bar with title and expand/collapse arrow ──
+        self._header = ctk.CTkFrame(self, fg_color="transparent", cursor="hand2")
+        self._header.pack(fill="x", pady=(0, 4))
+
+        self._lbl_title = ctk.CTkLabel(
+            self._header,
+            text="📖  HOW TO PLAY",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color=TEXT_ACCENT,
-        ).pack(anchor="w", pady=(0, 6))
+            anchor="w",
+        )
+        self._lbl_title.pack(side="left", anchor="w")
+
+        self._lbl_toggle = ctk.CTkLabel(
+            self._header,
+            text="▲",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=TEXT_SECONDARY,
+            width=24,
+            anchor="e",
+        )
+        self._lbl_toggle.pack(side="right", anchor="e")
+
+        # ── Body container holding rules list ──
+        self._body = ctk.CTkFrame(self, fg_color="transparent")
+        self._body.pack(fill="x", pady=(0, 4))
 
         rules = [
             ("🎯", "Goal", "Deduce every suspect's status as Criminal or Innocent."),
@@ -564,20 +618,42 @@ class HowToPlayPanel(ctk.CTkFrame):
         ]
 
         for icon, title, desc in rules:
-            row = ctk.CTkFrame(self, fg_color="transparent")
+            row = ctk.CTkFrame(self._body, fg_color="transparent")
             row.pack(fill="x", pady=2)
 
             ctk.CTkLabel(
-                row, text=f"{icon} {title}:",
+                row,
+                text=f"{icon} {title}:",
                 font=ctk.CTkFont(size=11, weight="bold"),
-                text_color=TEXT_PRIMARY, anchor="w", width=85,
+                text_color=TEXT_PRIMARY,
+                anchor="w",
+                width=85,
             ).pack(side="left", anchor="nw")
 
             ctk.CTkLabel(
-                row, text=desc,
+                row,
+                text=desc,
                 font=ctk.CTkFont(size=11),
-                text_color=TEXT_SECONDARY, wraplength=220, justify="left", anchor="w",
+                text_color=TEXT_SECONDARY,
+                wraplength=220,
+                justify="left",
+                anchor="w",
             ).pack(side="left", fill="x", expand=True)
+
+        # Bind click handlers to header widgets
+        self._header.bind("<Button-1>", lambda _e: self.toggle())
+        self._lbl_title.bind("<Button-1>", lambda _e: self.toggle())
+        self._lbl_toggle.bind("<Button-1>", lambda _e: self.toggle())
+
+    def toggle(self) -> None:
+        """Toggle collapse/expand state of the rules body."""
+        self._collapsed = not self._collapsed
+        if self._collapsed:
+            self._body.pack_forget()
+            self._lbl_toggle.configure(text="▼")
+        else:
+            self._body.pack(fill="x", pady=(0, 4))
+            self._lbl_toggle.configure(text="▲")
 
 
 # ══════════════════════════════════════════════════════════
@@ -594,7 +670,6 @@ class CompactActionToolbar(ctk.CTkFrame):
         on_hint: Callable[[], None] | None = None,
         on_auto_solve: Callable[[], None] | None = None,
         on_restart: Callable[[], None] | None = None,
-        on_load: Callable[[], None] | None = None,
         **kwargs,
     ) -> None:
         super().__init__(master, fg_color="transparent", height=36, **kwargs)
@@ -606,7 +681,6 @@ class CompactActionToolbar(ctk.CTkFrame):
             ("💡 Hint",       BTN_HINT,    BTN_HINT_H,    on_hint),
             ("⚡ Auto Solve", BTN_AUTO,    BTN_AUTO_H,    on_auto_solve),
             ("↻ Restart",    BTN_RESTART, BTN_RESTART_H, on_restart),
-            ("📂 Load",       BTN_LOAD,    BTN_LOAD_H,    on_load),
         ]
 
         for text, fg, hover, cmd in buttons:
@@ -624,7 +698,7 @@ class CompactActionToolbar(ctk.CTkFrame):
 # ══════════════════════════════════════════════════════════
 
 class ControlPanel(ctk.CTkFrame):
-    """Sidebar panel with HINT, AUTO SOLVE, RESTART, LOAD buttons."""
+    """Sidebar panel with HINT, AUTO SOLVE, RESTART buttons."""
 
     def __init__(
         self,
@@ -633,7 +707,6 @@ class ControlPanel(ctk.CTkFrame):
         on_hint: Callable[[], None] | None = None,
         on_auto_solve: Callable[[], None] | None = None,
         on_restart: Callable[[], None] | None = None,
-        on_load: Callable[[], None] | None = None,
         **kwargs,
     ) -> None:
         super().__init__(master, corner_radius=14, fg_color=BG_CARD, **kwargs)
@@ -648,7 +721,6 @@ class ControlPanel(ctk.CTkFrame):
             ("💡  Hint",        BTN_HINT,    BTN_HINT_H,    on_hint),
             ("⚡  Auto Solve",  BTN_AUTO,    BTN_AUTO_H,    on_auto_solve),
             ("↻   Restart",     BTN_RESTART, BTN_RESTART_H, on_restart),
-            ("📂  Load Level",  BTN_LOAD,    BTN_LOAD_H,    on_load),
         ]
         for text, fg, hover, cmd in buttons:
             ctk.CTkButton(
@@ -927,64 +999,128 @@ class VictoryPopup(ctk.CTkToplevel):
 
 
 # ══════════════════════════════════════════════════════════
-#  NOT PROVABLE POPUP MODAL
+#  VERDICT DEDUCTION FEEDBACK POPUPS
 # ══════════════════════════════════════════════════════════
 
-class NotProvablePopup(ctk.CTkToplevel):
-    """Modal dialog displayed when a player submits a verdict without sufficient evidence."""
+class VerdictFeedbackPopup(ctk.CTkToplevel):
+    """Modal dialog displaying deduction feedback matching reference designs (without Share button).
+
+    Supports two states:
+    1. NOT_PROVABLE ("Conclusion not possible") - Yellow warning icon ⚠️
+    2. CONTRADICTED ("That's not it") - Red prohibition icon 🚫
+    """
 
     def __init__(
         self,
         master: ctk.CTkBaseClass,
         character_name: str,
         verdict: str,
+        result_type: str = "NOT_PROVABLE",
+        opposite_verdict: str | None = None,
     ) -> None:
         super().__init__(master)
-        self.title("Insufficient Evidence")
-        self.geometry("420x260")
+
+        is_contradicted = (result_type.upper() == "CONTRADICTED")
+        title_text = "That's not it" if is_contradicted else "Conclusion not possible"
+        self.title(title_text)
+
+        self.geometry("440x310")
         self.resizable(False, False)
-        self.configure(fg_color="#1e1b18")
+        self.configure(fg_color="#181514")
         self.transient(master.winfo_toplevel())
         self.grab_set()
 
         # Center on parent window
         self.update_idletasks()
         master_win = master.winfo_toplevel()
-        x = master_win.winfo_x() + (master_win.winfo_width() // 2) - 210
-        y = master_win.winfo_y() + (master_win.winfo_height() // 2) - 130
+        x = master_win.winfo_x() + (master_win.winfo_width() // 2) - 220
+        y = master_win.winfo_y() + (master_win.winfo_height() // 2) - 155
         self.geometry(f"+{x}+{y}")
 
-        pad = ctk.CTkFrame(self, fg_color="#272321", corner_radius=16, border_width=2, border_color="#f1c40f")
-        pad.pack(fill="both", expand=True, padx=16, pady=16)
-
-        # Warning Icon & Title
-        ctk.CTkLabel(
-            pad, text="⚠️", font=ctk.CTkFont(size=36)
-        ).pack(pady=(14, 0))
-
-        ctk.CTkLabel(
-            pad, text="INSUFFICIENT EVIDENCE!",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#f1c40f",
-        ).pack(pady=(4, 6))
-
-        msg = (
-            f"There is not enough evidence yet to prove that {character_name} is {verdict}.\n"
-            f"Keep exploring the grid for more clues!"
+        # Outer card frame matching reference dark styling
+        card = ctk.CTkFrame(
+            self,
+            fg_color="#282320",
+            corner_radius=18,
+            border_width=1,
+            border_color="#3e3733",
         )
+        card.pack(fill="both", expand=True, padx=14, pady=14)
+
+        # ── Top Circular Icon Badge ──
+        icon_color = "#f07167" if is_contradicted else "#d4a574"
+        icon_symbol = "🚫" if is_contradicted else "⚠️"
+
+        icon_frame = ctk.CTkFrame(
+            card,
+            width=52, height=52, corner_radius=26,
+            fg_color="transparent",
+            border_width=2,
+            border_color=icon_color,
+        )
+        icon_frame.pack(pady=(16, 8))
+        icon_frame.pack_propagate(False)
 
         ctk.CTkLabel(
-            pad, text=msg,
-            font=ctk.CTkFont(size=12),
-            text_color=TEXT_PRIMARY, wraplength=350, justify="center",
-        ).pack(pady=(0, 16))
+            icon_frame,
+            text=icon_symbol,
+            font=ctk.CTkFont(size=22),
+            text_color=icon_color,
+        ).pack(expand=True)
 
-        # Keep Looking Button
+        # ── Title ──
+        ctk.CTkLabel(
+            card,
+            text=title_text,
+            font=ctk.CTkFont(family="Georgia", size=20, weight="bold"),
+            text_color="#ffffff",
+        ).pack(pady=(0, 10))
+
+        # ── Body Text with Bold Tokens ──
+        verdict_clean = verdict.lower()
+        if opposite_verdict:
+            opp_clean = opposite_verdict.lower()
+        else:
+            opp_clean = "innocent" if verdict_clean == "criminal" else "criminal"
+
+        if is_contradicted:
+            msg = (
+                f"The statements you've unlocked rule out "
+                f"{character_name} being {verdict_clean} — read them again and "
+                f"take another angle."
+            )
+        else:
+            msg = (
+                f"You can't prove {character_name} is {verdict_clean} from the "
+                f"statements you've unlocked yet — there's still "
+                f"a consistent case where {character_name} is {opp_clean}.\n"
+                f"Unlock more testimony first, or lean on a hint."
+            )
+
+        ctk.CTkLabel(
+            card,
+            text=msg,
+            font=ctk.CTkFont(size=12),
+            text_color="#d0c8c0",
+            wraplength=370,
+            justify="center",
+        ).pack(pady=(0, 18), padx=16)
+
+        # ── Single "Keep looking" Button (NO Share button) ──
         ctk.CTkButton(
-            pad, text="🔍 Keep Looking",
+            card,
+            text="Keep looking",
             font=ctk.CTkFont(size=13, weight="bold"),
-            fg_color="#d4a574", hover_color="#bd8e5d", text_color="#221e1d",
-            height=38, corner_radius=8,
+            fg_color="#f07167",
+            hover_color="#d85b51",
+            text_color="#ffffff",
+            height=42,
+            width=170,
+            corner_radius=12,
             command=self.destroy,
-        ).pack(ipadx=16)
+        ).pack(pady=(0, 14))
+
+
+# Backward-compatibility alias
+NotProvablePopup = VerdictFeedbackPopup
 
